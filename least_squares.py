@@ -6,7 +6,7 @@ x = np.array([1, 2, 3, 4, 5])
 y = np.array([2, 4, 5, 4, 5])
 //添加一行注释测试分支上传合并是否可行
 // 123456  nian commit
-
+// 测试分支合并
 # 最小二乘法拟合 y = a*x + b
 A = np.vstack([x, np.ones(len(x))]).T
 # 解法：最小二乘
