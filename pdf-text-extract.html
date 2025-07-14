@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF 文本提取示例</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .result-container h3 {
+            margin: 10px 0 5px 0;
+            color: #333;
+        }
+        #result { 
+            height: 200px; 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            margin: 0 0 10px 0; 
+            overflow-y: auto; 
+            background: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+        button { padding: 10px 15px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:disabled { background: #cccccc; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+<body>
+    <h1>PDF 文本提取演示</h1>
+    <input type="file" id="pdf-upload" accept="application/pdf" />
+    <div class="result-container">
+        <h3>提取结果：</h3>
+        <div id="result">请上传 PDF 文件</div>
+    </div>
+    <script>
+        const input = document.getElementById('pdf-upload');
+        const resultDiv = document.getElementById('result');
+
+        input.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            resultDiv.innerHTML = '正在解析 PDF，请稍候...';
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let textContent = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const txt = await page.getTextContent();
+                    const pageText = txt.items.map(item => item.str).join('');
+                    textContent += `\n--- 第${i}页 ---\n` + pageText + '\n';
+                }
+                resultDiv.textContent = textContent.trim() || '未能提取到文本内容。';
+            } catch (err) {
+                resultDiv.innerHTML = '<span style="color:red;">解析失败：' + err.message + '</span>';
+            }
+        });
+    </script>
+</body>
+</html> 
