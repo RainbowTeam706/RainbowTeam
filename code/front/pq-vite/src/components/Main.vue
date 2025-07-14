@@ -1,0 +1,601 @@
+<template>
+  <div class="main-page" style="padding: 0%">
+    <!-- 顶部导航栏 -->
+    <div class="top-nav">
+      <el-button
+        class="nav-btn"
+        :class="{ active: activeNav === 'join' }"
+        @click="
+          joinDialogVisible = true;
+          activeNav = 'join';
+        "
+      >
+        加入活动
+      </el-button>
+      <el-button
+        class="nav-btn"
+        :class="{ active: activeNav === 'quick' }"
+        @click="
+          quickDialogVisible = true;
+          activeNav = 'quick';
+        "
+      >
+        快速会议
+      </el-button>
+      <el-button
+        class="nav-btn"
+        :class="{ active: activeNav === 'book' }"
+        @click="
+          bookDialogVisible = true;
+          activeNav = 'book';
+        "
+      >
+        预定会议
+      </el-button>
+    </div>
+
+    <!-- 活动筛选按钮 -->
+    <div class="filter-section">
+      <el-button
+        class="filter-btn"
+        :class="{ active: activeFilter === 'all' }"
+        @click="activeFilter = 'all'"
+      >
+        全部
+      </el-button>
+      <el-button
+        class="filter-btn"
+        :class="{ active: activeFilter === 'created' }"
+        @click="activeFilter = 'created'"
+      >
+        我发起的
+      </el-button>
+      <el-button
+        class="filter-btn"
+        :class="{ active: activeFilter === 'joined' }"
+        @click="activeFilter = 'joined'"
+      >
+        我参与的
+      </el-button>
+    </div>
+
+    <!-- 活动列表 -->
+    <div class="activity-list">
+      <div
+        v-for="activity in filteredActivities"
+        :key="activity.id"
+        class="activity-item"
+        @click="handleActivityClick(activity)"
+      >
+        <div class="activity-content">
+          <div class="activity-title">{{ activity.title }}</div>
+          <div class="activity-info">
+            <span class="info-item">{{ activity.duration }}</span>
+            <span class="info-item">{{ activity.location }}</span>
+            <span class="info-item">{{ activity.participants }}人</span>
+          </div>
+          <div class="activity-status">
+            <el-tag
+              :type="getStatusType(activity.status)"
+              size="small"
+              class="status-tag"
+            >
+              {{ activity.status }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <div class="bottom-nav">
+      <div
+        class="nav-item"
+        :class="{ active: activeTab === 'classroom' }"
+        @click="activeTab = 'classroom'"
+      >
+        <el-icon size="20"><School /></el-icon>
+        <span>课堂</span>
+      </div>
+      <div
+        class="nav-item"
+        :class="{ active: activeTab === 'profile' }"
+        @click="activeTab = 'profile'"
+      >
+        <el-icon size="20"><User /></el-icon>
+        <span>我的</span>
+      </div>
+    </div>
+
+    <!-- 加入活动弹窗 -->
+    <el-dialog v-model="joinDialogVisible" title="加入活动" width="300px">
+      <el-form :model="joinForm">
+        <el-form-item label="邀请码">
+          <el-input v-model="joinForm.code" placeholder="请输入邀请码" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="joinDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleJoin">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 快速会议弹窗 -->
+    <el-dialog v-model="quickDialogVisible" title="快速会议" width="300px">
+      <el-form :model="quickForm">
+        <el-form-item label="时长(分钟)">
+          <el-input
+            v-model="quickForm.duration"
+            type="number"
+            placeholder="请输入时长"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="quickDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleQuick">确定</el-button>
+      </template>
+    </el-dialog>
+<!-- 预定会议弹窗 -->
+<el-dialog v-model="bookDialogVisible" title="预定会议" width="400px"  draggable >
+  <el-form :model="bookForm" label-width="80px">
+    <el-form-item label="标题">
+      <el-input v-model="bookForm.title" placeholder="请输入标题" />
+    </el-form-item>
+    <el-form-item label="内容">
+      <el-input v-model="bookForm.content" placeholder="请输入内容" />
+    </el-form-item>
+    <el-form-item label="位置">
+      <el-input v-model="bookForm.location" placeholder="请输入位置" />
+    </el-form-item>
+    <el-form-item label="开始时间">
+      <el-date-picker
+        v-model="bookForm.startTime"
+        type="datetime"
+        placeholder="选择开始时间"
+        style="width: 100%;"
+        value-format="YYYY-MM-DDTHH:mm:ss"
+        editable="false"
+        :input-attr="{ readonly: true }"
+
+      />
+    </el-form-item>
+    <el-form-item label="结束时间">
+      <el-date-picker
+        v-model="bookForm.endTime"
+        type="datetime"
+        placeholder="选择结束时间"
+        style="width: 100%;"
+        value-format="YYYY-MM-DDTHH:mm:ss"
+        editable="false"
+        :input-attr="{ readonly: true }"
+
+      />
+    </el-form-item>
+  </el-form>
+  <template #footer>
+    <el-button @click="bookDialogVisible = false">取消</el-button>
+    <el-button type="primary" @click="handleBook">确定</el-button>
+  </template>
+</el-dialog>
+
+
+<!-- main-page结束 -->
+  </div>
+</template>
+
+<script setup>
+import { ref, computed , reactive} from "vue";
+import { ElMessage } from "element-plus";
+import { School, User } from "@element-plus/icons-vue";
+
+const activeNav = ref("join");
+const activeFilter = ref("all");
+const activeTab = ref("classroom");
+
+const activities = ref([
+  {
+    id: 1,
+    title: "Vue3 组件开发实战",
+    duration: "2小时",
+    location: "线上会议室A",
+    participants: 25,
+    status: "进行中",
+    type: "created",
+  },
+  {
+    id: 2,
+    title: "Element Plus 移动端适配",
+    duration: "1.5小时",
+    location: "线下教室B",
+    participants: 18,
+    status: "未开始",
+    type: "joined",
+  },
+  {
+    id: 3,
+    title: "前端工程化实践",
+    duration: "3小时",
+    location: "线上会议室C",
+    participants: 32,
+    status: "已结束",
+    type: "created",
+  },
+  {
+    id: 3,
+    title: "前端工程化实践",
+    duration: "3小时",
+    location: "线上会议室C",
+    participants: 32,
+    status: "已结束",
+    type: "created",
+  },
+  {
+    id: 3,
+    title: "前端工程化实践",
+    duration: "3小时",
+    location: "线上会议室C",
+    participants: 32,
+    status: "已结束",
+    type: "created",
+  },
+  {
+    id: 3,
+    title: "前端工程化实践",
+    duration: "3小时",
+    location: "线上会议室C",
+    participants: 32,
+    status: "已结束",
+    type: "created",
+  },
+]);
+
+const filteredActivities = computed(() => {
+  if (activeFilter.value === "all") {
+    return activities.value;
+  }
+  return activities.value.filter(
+    (activity) => activity.type === activeFilter.value
+  );
+});
+
+function getStatusType(status) {
+  switch (status) {
+    case "已结束":
+      return "info";
+    case "进行中":
+      return "success";
+    case "未开始":
+      return "primary";
+    default:
+      return "info";
+  }
+}
+
+function handleActivityClick(activity) {
+  ElMessage.success(`点击了活动：${activity.title}`);
+}
+
+// 弹窗控制
+const joinDialogVisible = ref(false);
+const quickDialogVisible = ref(false);
+const bookDialogVisible = ref(false);
+
+// 表单数据
+const joinForm = reactive({ code: "" });
+const quickForm = reactive({ duration: "" });
+const bookForm = reactive({
+  title: "",
+  content: "",
+  location: "",
+  startTime: "",
+  endTime: "",
+});
+
+// 提交方法
+function handleJoin() {
+  if (!joinForm.code) return ElMessage.error("请输入邀请码");
+  ElMessage.success("已提交邀请码: " + joinForm.code);
+  joinDialogVisible.value = false;
+}
+function handleQuick() {
+  if (!quickForm.duration) return ElMessage.error("请输入活动时长");
+  ElMessage.success("已提交时长: " + quickForm.duration + "分钟");
+  quickDialogVisible.value = false;
+}
+function handleBook() {
+  if (
+    !bookForm.title ||
+    !bookForm.content ||
+    !bookForm.location ||
+    !bookForm.startTime ||
+    !bookForm.endTime
+  ) {
+    return ElMessage.error("请填写完整信息");
+  }
+  // 这里可以调用后端接口
+  ElMessage.success("已提交预定");
+  bookDialogVisible.value = false;
+}
+</script>
+
+
+<style> 
+
+/* 让 el-dialog-body 在移动端最大高度为视口高度，内容可滚动 */
+.el-dialog__body {
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 修复 el-picker-panel 在移动端弹窗内显示不全问题 */
+.el-picker-panel {
+  max-height: 60vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 防止弹窗打开时背景页面跟随滚动 */
+.el-overlay {
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+</style>
+<style scoped>
+
+.main-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.top-nav {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px 20px;
+  display: flex;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-btn {
+  flex: 1;
+  height: 40px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.nav-btn.active {
+  background: white;
+  color: #667eea;
+  border-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.filter-section {
+  padding: 16px 20px;
+  background: white;
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.filter-btn {
+  flex: 1;
+  height: 36px;
+  border-radius: 18px;
+  font-size: 0.85rem;
+  border: 1px solid #e4e7ed;
+  background: white;
+  color: #606266;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+
+.filter-btn.active {
+  background: #409eff;
+  color: white;
+  border-color: #409eff;
+}
+
+.activity-list {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.activity-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #409eff;
+}
+
+.activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.activity-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.info-item {
+  font-size: 0.85rem;
+  color: #606266;
+  background: #f5f7fa;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.activity-status {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.status-tag {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.bottom-nav {
+  background: white;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  padding: 8px 0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #909399;
+}
+
+.nav-item:hover {
+  color: #409eff;
+}
+
+.nav-item.active {
+  color: #409eff;
+}
+
+.nav-item span {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .top-nav {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .nav-btn {
+    height: 36px;
+    font-size: 0.85rem;
+  }
+
+  .filter-section {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .filter-btn {
+    height: 32px;
+    font-size: 0.8rem;
+  }
+
+  .activity-list {
+    padding: 12px 16px;
+  }
+
+  .activity-item {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .activity-title {
+    font-size: 1rem;
+  }
+
+  .info-item {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .nav-btn {
+    height: 32px;
+    font-size: 0.8rem;
+  }
+
+  .filter-section {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .filter-btn {
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .activity-list {
+    padding: 10px 12px;
+  }
+
+  .activity-item {
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .activity-title {
+    font-size: 0.95rem;
+  }
+
+  .info-item {
+    font-size: 0.75rem;
+    padding: 3px 6px;
+  }
+
+  .status-tag {
+    font-size: 0.75rem;
+  }
+}
+</style>
+
+
+
+
+
+
