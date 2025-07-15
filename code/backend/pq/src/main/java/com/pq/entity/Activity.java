@@ -7,38 +7,33 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
-
+import java.util.Date;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("user")
-public class User implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * 主键
-     */
+@TableName("activity")
+public class Activity {
     @TableId(value = "id", type = IdType.AUTO)
     private int id;
 
-    /**
-     * 手机号码
-     */
-    private String username;
+    private int createId;
 
-    /**
-     * 密码
-     */
-    private String password;
+    private String title;
 
-    /**
-     * 昵称，默认是随机字符
-     */
-    private String nickname;
+    private String content;
 
+    private String location;
 
+    private Date startTime;
+
+    private Date endTime;
+
+    private String inviteCode;
+
+    private Date createTime;
+
+    private int Status;
+
+    private int curNum;
 }

@@ -22,6 +22,8 @@ spring:
     default-property-inclusion: non_null # JSON处理时忽略非空字段
 mybatis-plus:
   type-aliases-package: com.pq.entity # 别名扫描包
+  configuration:
+    map-underscore-to-camel-case: false
 logging:
   level:
     com.pq: debug
