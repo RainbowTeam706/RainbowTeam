@@ -7,10 +7,10 @@ export default defineConfig({
   server:{
     proxy:{
       '/api':{
-        target:'http://192.168.1.107:8080',//后端地址
+        target:'http://192.168.1.108:8080',//后端地址
         changeOrigin:true,
         rewrite:(path)=>path.replace(/^\/api/,'')
-      }
+      },
     },
     host: '0.0.0.0',
     port: 5173, // 你的端口号，默认5173
