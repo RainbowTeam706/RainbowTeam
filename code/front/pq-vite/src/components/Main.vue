@@ -62,34 +62,60 @@
     </div>
 
     <!-- 活动列表 -->
-    <el-scrollbar class="activity-list" max-height="520px">
+     <el-scrollbar class="activity-list" max-height="520px">
       <div
-        v-for="activity in filteredActivities"
-        :key="activity.id"
-        class="activity-item"
-        @click="handleActivityClick(activity)"
+  v-for="activity in filteredActivities"
+  :key="activity.id"
+  class="activity-item"
+  @click="handleActivityClick(activity)"
+  style="margin-top: 5px;"
+>
+  <div class="activity-content">
+    <div class="activity-title">{{ activity.title }}</div>
+    <div class="activity-info">
+      <span class="info-item content-ellipsis" :title="activity.content">
+        内容：{{ activity.content }}
+      </span>
+      <span class="info-item">
+        时间：{{ formatDate(activity.startTime) }} ~ {{ formatDate(activity.endTime) }}
+      </span>
+      <span class="info-item">地点：{{ activity.location }}</span>
+      <span class="info-item">人数：{{ activity.curNum }}</span>
+      <span class="info-item">邀请码：{{ activity.inviteCode }}</span>
+
+    </div>
+
+    <div class="activity-status">
+      <el-tag
+        :type="getStatusType(activity.status)"
+        size="small"
+        class="status-tag"
       >
-        <div class="activity-content">
-          <div class="activity-title">{{ activity.title }}</div>
-          <div class="activity-info">
-            <span class="info-item">{{ activity.duration }}</span>
-            <span class="info-item">{{ activity.location }}</span>
-            <span class="info-item">{{ activity.participants }}人</span>
-          </div>
-          <div class="activity-status">
-            <el-tag
-              :type="getStatusType(activity.status)"
-              size="small"
-              class="status-tag"
-            >
-              {{ activity.status }}
-            </el-tag>
-          </div>
-        </div>
+        {{ getStatusText(activity.status) }}
+      </el-tag>
+    </div>
+  </div>
+</div>
+  </el-scrollbar>
+    <!-- 底部导航栏 -->
+    <div class="bottom-nav">
+      <div
+        class="nav-item"
+        :class="{ active: activeTab === 'classroom' }"
+        @click="activeTab = 'classroom'"
+      >
+        <el-icon size="20"><School /></el-icon>
+        <span>课堂</span>
       </div>
-    </el-scrollbar>
-
-
+      <div
+        class="nav-item"
+        :class="{ active: activeTab === 'profile' }"
+        @click="activeTab = 'profile'"
+      >
+        <el-icon size="20"><User /></el-icon>
+        <span>我的</span>
+      </div>
+    </div>
 
     <!-- 加入活动弹窗 -->
     <el-dialog v-model="joinDialogVisible" title="加入活动" width="300px">
@@ -171,90 +197,102 @@
 <script setup>
 import { ref, computed , reactive} from "vue";
 import { ElMessage } from "element-plus";
-import { useRouter } from 'vue-router'
-
+import { School, User } from "@element-plus/icons-vue";
+// 新增：导入获取活动列表API
+import { fetchCreatedActivities, fetchJoinedActivities } from '../api/activity'
+import { onMounted, watch } from 'vue'
 
 const router = useRouter()
 const activeNav = ref("join");
-const activeFilter = ref("all");
 const activeTab = ref("classroom");
 
+// 活动对象结构说明
 const activities = ref([
   {
-    id: 1,
-    title: "Vue3 组件开发实战",
-    duration: "2小时",
-    location: "线上会议室A",
-    participants: 25,
-    status: "进行中",
-    type: "created",
-  },
-  {
-    id: 2,
-    title: "Element Plus 移动端适配",
-    duration: "1.5小时",
-    location: "线下教室B",
-    participants: 18,
-    status: "未开始",
-    type: "joined",
-  },
-  {
-    id: 3,
-    title: "前端工程化实践",
-    duration: "3小时",
-    location: "线上会议室C",
-    participants: 32,
-    status: "已结束",
-    type: "created",
-  },
-  {
-    id: 3,
-    title: "前端工程化实践",
-    duration: "3小时",
-    location: "线上会议室C",
-    participants: 32,
-    status: "已结束",
-    type: "created",
-  },
-  {
-    id: 3,
-    title: "前端工程化实践",
-    duration: "3小时",
-    location: "线上会议室C",
-    participants: 32,
-    status: "已结束",
-    type: "created",
-  },
-  {
-    id: 3,
-    title: "前端工程化实践",
-    duration: "3小时",
-    location: "线上会议室C",
-    participants: 32,
-    status: "已结束",
-    type: "created",
-  },
-]);
-
-const filteredActivities = computed(() => {
-  if (activeFilter.value === "all") {
-    return activities.value;
+    id: 0,                  // 活动ID
+    createId: 0,            // 创建者ID
+    title: '哈哈哈哈',              // 活动标题
+    content: '迟点发fheuiohfoirehgoihfreiohtgiuht5nriuhgujtirhngui',            // 活动内容
+    location: '234',           // 地点
+    startTime: '2025-07-15T10:00:00',          // 开始时间（ISO格式字符串）
+    endTime: '2025-07-15T12:00:00',            // 结束时间（ISO格式字符串）
+    inviteCode: '2356567',         // 邀请码
+    createTime: '',         // 创建时间（ISO格式字符串）
+    curNum: 20,              // 当前参与人数
+    status: 0               // 活动状态（0=未开始, 1=进行中, 2=已结束...）
   }
-  return activities.value.filter(
-    (activity) => activity.type === activeFilter.value
-  );
-});
+])
+const activeFilter = ref('all') // 当前筛选条件
 
+// 加载活动数据，根据筛选条件请求不同接口
+async function loadActivities() {
+  try {
+    console.log(activeFilter.value)
+    if (activeFilter.value === 'all') {
+      // 并发请求“我发起的”和“我参与的”活动
+      const [createdRes, joinedRes] = await Promise.all([
+        fetchCreatedActivities(),
+        fetchJoinedActivities()
+      ])
+      // 合并两个接口返回的数据
+      activities.value = [
+        ...(createdRes.data.data || []),
+        ...(joinedRes.data.data || [])
+      ]
+    } else if (activeFilter.value === 'created') {
+      const res = await fetchCreatedActivities()
+      activities.value = res.data.data || []
+    } else if (activeFilter.value === 'joined') {
+      const res = await fetchJoinedActivities()
+      activities.value = res.data.data || []
+    }
+    ElMessage.success('刷新成功')
+  } catch (e) {
+    ElMessage.error('获取活动失败')
+  }
+}
+// 页面加载时和筛选条件变化时都要加载
+onMounted(loadActivities)
+watch(activeFilter, loadActivities)
+// activities直接渲染
+const filteredActivities = computed(() => activities.value)
+// //根据status返回不同的颜色
+// function getStatusType(status) {
+//   switch (status) {
+//     case "已结束":
+//       return "info";
+//     case "进行中":
+//       return "success";
+//     case "未开始":
+//       return "primary";
+//     default:
+//       return "info";
+//   }
+// }
+// 格式化时间
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleString('zh-CN', { hour12: false });
+}
+
+// 状态文本
+function getStatusText(status) {
+  switch (status) {
+    case 0: return '未开始';
+    case 1: return '进行中';
+    case 2: return '已结束';
+    default: return '未知';
+  }
+}
+
+// 状态颜色
 function getStatusType(status) {
   switch (status) {
-    case "已结束":
-      return "info";
-    case "进行中":
-      return "success";
-    case "未开始":
-      return "primary";
-    default:
-      return "info";
+    case 0: return 'primary';
+    case 1: return 'success';
+    case 2: return 'info';
+    default: return 'warning';
   }
 }
 
@@ -335,6 +373,14 @@ function handleBook() {
 </style>
 <style scoped>
 
+.content-ellipsis {
+  display: inline-block;
+  max-width: 300px;      /* 根据实际布局调整宽度 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
 .main-page {
   min-height: 100vh;
   background: #f5f7fa;

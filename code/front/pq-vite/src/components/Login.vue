@@ -79,9 +79,12 @@ import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import request from '../utils/request'
 
 
+// 新增：导入login和register API
+import { login, register } from '../api/user'
+// 新增：导入setToken方法
+import { setToken } from '../stores/token'
 
 
 const router = useRouter()
@@ -125,14 +128,12 @@ async function handleSubmit() {
     if (isLogin.value) {
       // 登录逻辑
       try {
-        const res = await request.post('/user/login', {
-          username: form.username,
-          password: form.password
-        })
+        const res = await login(form.username, form.password)
         if (res.data.success) {
           ElMessage.success('登录成功')
-          // 可存储token或用户id
-          localStorage.setItem('token', res.data.data)
+          // 存储token到stores
+          setToken(res.data.data) // 这里假设后端返回的token在res.data
+          console.log(res.data.data)
           router.push('/main')
         } else {
           ElMessage.error('用户名或密码错误')
@@ -147,11 +148,8 @@ async function handleSubmit() {
         return
       }
       try {
-        const res = await request.post('/user/register', {
-          username: form.username,
-          password: form.password
-        })
-        if (res.data.success) {
+        const res = await register(form.username, form.password)
+        if (res.success) {
           ElMessage.success('注册成功，请登录')
           // 注册成功后自动切换到登录模式
           isLogin.value = true
@@ -160,7 +158,7 @@ async function handleSubmit() {
           form.confirmPassword = ''
           formRef.value && formRef.value.clearValidate()
         } else {
-          ElMessage.error(res.data.data || '注册失败')
+          ElMessage.error(res.data || '注册失败')
         }
       } catch (e) {
         ElMessage.error('注册失败，请检查网络')
