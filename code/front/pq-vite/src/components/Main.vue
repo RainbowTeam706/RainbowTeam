@@ -97,25 +97,7 @@
   </div>
 </div>
   </el-scrollbar>
-    <!-- 底部导航栏 -->
-    <div class="bottom-nav">
-      <div
-        class="nav-item"
-        :class="{ active: activeTab === 'classroom' }"
-        @click="activeTab = 'classroom'"
-      >
-        <el-icon size="20"><School /></el-icon>
-        <span>课堂</span>
-      </div>
-      <div
-        class="nav-item"
-        :class="{ active: activeTab === 'profile' }"
-        @click="activeTab = 'profile'"
-      >
-        <el-icon size="20"><User /></el-icon>
-        <span>我的</span>
-      </div>
-    </div>
+
 
     <!-- 加入活动弹窗 -->
     <el-dialog v-model="joinDialogVisible" title="加入活动" width="300px">
@@ -201,6 +183,7 @@ import { School, User } from "@element-plus/icons-vue";
 // 新增：导入获取活动列表API
 import { fetchCreatedActivities, fetchJoinedActivities } from '../api/activity'
 import { onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router';
 
 const router = useRouter()
 const activeNav = ref("join");
