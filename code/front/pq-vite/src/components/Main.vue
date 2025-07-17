@@ -14,7 +14,7 @@
       >
         加入活动
       </el-button>
-      <el-button
+      <!-- <el-button
         class="nav-btn"
         :class="{ active: activeNav === 'quick' }"
         @click="
@@ -23,7 +23,7 @@
         "
       >
         快速会议
-      </el-button>
+      </el-button> -->
       <el-button
         class="nav-btn"
         :class="{ active: activeNav === 'book' }"
@@ -32,7 +32,7 @@
           activeNav = 'book';
         "
       >
-        预定会议
+        创建活动
       </el-button>
     </div>
 
@@ -112,7 +112,7 @@
       </template>
     </el-dialog>
 
-    <!-- 快速会议弹窗 -->
+    <!-- 快速会议弹窗
     <el-dialog v-model="quickDialogVisible" title="快速会议" width="300px">
       <el-form :model="quickForm">
         <el-form-item label="时长(分钟)">
@@ -127,9 +127,10 @@
         <el-button @click="quickDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleQuick">确定</el-button>
       </template>
-    </el-dialog>
-<!-- 预定会议弹窗 -->
-<el-dialog v-model="bookDialogVisible" title="预定会议" width="400px"  draggable >
+    </el-dialog> -->
+
+<!-- 创建活动弹窗 -->
+<el-dialog v-model="bookDialogVisible" title="创建活动" width="400px"  draggable >
   <el-form :model="bookForm" label-width="80px">
     <el-form-item label="标题">
       <el-input v-model="bookForm.title" placeholder="请输入标题" />
@@ -279,11 +280,13 @@ function getStatusType(status) {
   }
 }
 
+
+ import {useUserInfoStore} from '../stores/userInfo.js'
 function handleActivityClick(activity) {
-  ElMessage.success(`点击了活动：${activity.title}`);
-
-
-  router.push('/speech');
+  // 跳转到活动详情页面，对应的活动详情内容 传入info store 
+  const userInfoStore = useUserInfoStore();
+  userInfoStore.setInfo(activity);
+  router.push('/speechStudent');
 
 }
 
