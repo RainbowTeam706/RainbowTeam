@@ -3,7 +3,9 @@ import Login from '../components/Login.vue'
 import Main from '../components/Main.vue'
 import Myself from '../components/Myself.vue'
 import NavBottom from '../components/NavBottom.vue'
-import Speech from '../components-student/speech.vue'
+import SpeechStudent from '../components-student/Speech-Student.vue'
+import SpeechTeacher from '../components-teacher/Speech-Teacher.vue'
+import PopquizTeacher from '../components-teacher/Popquiz-Teacher.vue'
 
 
 const routes = [
@@ -16,7 +18,9 @@ const routes = [
     { path: '/main', component: Main },
     { path: '', redirect: 'main' },
   ]},
-  { path: '/speech', component: Speech },
+  { path: '/speechStudent', component: SpeechStudent },
+  { path: '/speechTeacher', component: SpeechTeacher },
+  { path: '/popquizTeacher', component: PopquizTeacher },
 
 
 ]

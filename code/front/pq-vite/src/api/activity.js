@@ -9,8 +9,3 @@ export function fetchCreatedActivities() {
 export function fetchJoinedActivities() {
   return request.get('/activity/listByMe')
 }
-
-// 加入活动
-export function joinActivity(inviteCode) {
-  return request.post('/activity/add', { inviteCode })
-}
