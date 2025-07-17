@@ -1,5 +1,7 @@
+<!-- 此页面为点击底部"课堂"后跳转，显示主页面：活动列表-->
+
 <template>
-  <div class="main-page" style="padding: 0%">
+  <div  style="padding: 0%">
     <!-- 顶部导航栏 -->
     <div class="top-nav">
       <el-button
@@ -98,25 +100,7 @@
   </div>
 </div>
   </el-scrollbar>
-    <!-- 底部导航栏 -->
-    <div class="bottom-nav">
-      <div
-        class="nav-item"
-        :class="{ active: activeTab === 'classroom' }"
-        @click="activeTab = 'classroom'"
-      >
-        <el-icon size="20"><School /></el-icon>
-        <span>课堂</span>
-      </div>
-      <div
-        class="nav-item"
-        :class="{ active: activeTab === 'profile' }"
-        @click="activeTab = 'profile'"
-      >
-        <el-icon size="20"><User /></el-icon>
-        <span>我的</span>
-      </div>
-    </div>
+
 
     <!-- 加入活动弹窗 -->
     <el-dialog v-model="joinDialogVisible" title="加入活动" width="300px">
@@ -202,7 +186,9 @@ import { School, User } from "@element-plus/icons-vue";
 // 新增：导入获取活动列表API
 import { fetchCreatedActivities, fetchJoinedActivities, joinActivity } from '../api/activity'
 import { onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router';
 
+const router = useRouter()
 const activeNav = ref("join");
 const activeTab = ref("classroom");
 //当前用户信息，全局可用
@@ -303,6 +289,10 @@ function getStatusType(status) {
 
 function handleActivityClick(activity) {
   ElMessage.success(`点击了活动：${activity.title}`);
+
+
+  router.push('/speech');
+
 }
 
 // 弹窗控制
@@ -409,7 +399,7 @@ function handleBook() {
 
 .top-nav {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 16px 20px;
+  padding: 0%;
   display: flex;
   gap: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -449,7 +439,7 @@ function handleBook() {
 
 .filter-btn {
   flex: 1;
-  height: 36px;
+  height: 28px;
   border-radius: 18px;
   font-size: 0.85rem;
   border: 1px solid #e4e7ed;

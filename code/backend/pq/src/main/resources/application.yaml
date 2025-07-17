@@ -7,7 +7,7 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://localhost:3306/pq?useSSL=false&serverTimezone=UTC
     username: root
-    password: 12345678
+    password: Asdewq123#`
   redis:
     host: localhost
     port: 6379
@@ -22,6 +22,8 @@ spring:
     default-property-inclusion: non_null # JSON处理时忽略非空字段
 mybatis-plus:
   type-aliases-package: com.pq.entity # 别名扫描包
+  configuration:
+    map-underscore-to-camel-case: false
 logging:
   level:
     com.pq: debug
