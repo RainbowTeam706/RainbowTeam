@@ -76,9 +76,13 @@ import {
   Comment,
   Edit,
 } from "@element-plus/icons-vue";
-import { useUserInfoStore } from "../stores/userInfo.js";
-const userInfoStore = useUserInfoStore();
-const activity = userInfoStore.info;
+
+import { useUserInfoStore } from '../stores/userInfo.js'
+import { useInfoStore } from '../stores/userInfo.js'
+const userInfoStore = useUserInfoStore()
+const userInfo = userInfoStore.info
+const infoStore = useInfoStore()
+const activity = infoStore.info
 
 const activeTab = ref("popquiz");
 const getStatusText = (status) => {

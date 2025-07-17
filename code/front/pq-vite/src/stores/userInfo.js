@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-
+import {ref} from 'vue'
 export const useUserInfoStore = defineStore('user', {
   state: () => ({
     id: 0,
@@ -19,9 +19,9 @@ export const useUserInfoStore = defineStore('user', {
     }
   }
 })
-import {defineStore} from 'pinia'
-import {ref} from 'vue'
- export const InfoStore = defineStore('Info',()=>{
+
+
+ export const useInfoStore = defineStore('Info',()=>{
     //定义状态相关的内容
 
     const info = ref({})

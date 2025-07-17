@@ -106,9 +106,12 @@ import {
   Comment,
   Edit,
 } from "@element-plus/icons-vue";
-import { useUserInfoStore } from "../stores/userInfo.js";
-const userInfoStore = useUserInfoStore();
-const activity = userInfoStore.info;
+import { useUserInfoStore } from '../stores/userInfo.js'
+import { useInfoStore } from '../stores/userInfo.js'
+const userInfoStore = useUserInfoStore()
+const userInfo = userInfoStore.info
+const infoStore = useInfoStore()
+const activity = infoStore.info
 // 测试PPT链接/////////////////////////
 //activity.pptUrl = 'https://pq-ppt-test.oss-cn-shanghai.aliyuncs.com/ppt-test/%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8FPPT_%E6%B5%8B%E8%AF%95.ppt'
 
