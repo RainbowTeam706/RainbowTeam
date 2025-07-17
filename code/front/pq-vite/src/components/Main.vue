@@ -74,6 +74,9 @@
     <div class="activity-title">{{ activity.title }}</div>
     <div class="activity-info">
       <span class="info-item content-ellipsis" :title="activity.content">
+        发起人：{{ activity.createName }}
+      </span>
+      <span class="info-item content-ellipsis" :title="activity.content">
         内容：{{ activity.content }}
       </span>
       <span class="info-item">
@@ -181,13 +184,17 @@ import { ref, computed , reactive} from "vue";
 import { ElMessage } from "element-plus";
 import { School, User } from "@element-plus/icons-vue";
 // 新增：导入获取活动列表API
-import { fetchCreatedActivities, fetchJoinedActivities } from '../api/activity'
+import { fetchCreatedActivities, fetchJoinedActivities, joinActivity } from '../api/activity'
 import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router';
 
 const router = useRouter()
 const activeNav = ref("join");
 const activeTab = ref("classroom");
+//当前用户信息，全局可用
+import { useUserInfoStore } from '../stores/userInfo'
+const userInfoStore = useUserInfoStore()
+//console.log(userInfoStore.id, userInfoStore.username, userInfoStore.nickname)
 
 // 活动对象结构说明
 const activities = ref([
@@ -196,6 +203,7 @@ const activities = ref([
     createId: 0,            // 创建者ID
     title: '哈哈哈哈',              // 活动标题
     content: '迟点发fheuiohfoirehgoihfreiohtgiuht5nriuhgujtirhngui',            // 活动内容
+    createName:'孙悟空',
     location: '234',           // 地点
     startTime: '2025-07-15T10:00:00',          // 开始时间（ISO格式字符串）
     endTime: '2025-07-15T12:00:00',            // 结束时间（ISO格式字符串）
@@ -303,12 +311,29 @@ const bookForm = reactive({
   endTime: "",
 });
 
-// 提交方法
-function handleJoin() {
-  if (!joinForm.code) return ElMessage.error("请输入邀请码");
-  ElMessage.success("已提交邀请码: " + joinForm.code);
-  joinDialogVisible.value = false;
+// 加入活动提交方法
+async function handleJoin() {
+  if (!joinForm.code) {
+    return ElMessage.error("请输入邀请码");
+  }
+  try {
+    // 调用后端接口
+    console.log(joinForm.code)
+    const res = await joinActivity(joinForm.code);
+    // 假设后端返回 { success: true, data: ... }
+    if (res.data && res.data.success) {
+      ElMessage.success("加入活动成功！");
+      // 可选：刷新活动列表
+      await loadActivities();
+      joinDialogVisible.value = false;
+    } else {
+      ElMessage.error(res.data?.message || "加入活动失败！");
+    }
+  } catch (e) {
+    ElMessage.error("加入活动请求失败！");
+  }
 }
+
 function handleQuick() {
   if (!quickForm.duration) return ElMessage.error("请输入活动时长");
   ElMessage.success("已提交时长: " + quickForm.duration + "分钟");
