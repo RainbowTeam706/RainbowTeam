@@ -1,6 +1,27 @@
+import { defineStore } from 'pinia'
+
+export const useUserInfoStore = defineStore('user', {
+  state: () => ({
+    id: 0,
+    username: '测试名',
+    nickname: '孙悟空'
+  }),
+  actions: {
+    setUserInfo({ id, username, nickname}) {
+      this.id = id
+      this.username = username
+      this.nickname = nickname
+    },
+    clearUserInfo() {
+      this.id = null
+      this.username = ''
+      this.nickname = ''
+    }
+  }
+})
 import {defineStore} from 'pinia'
 import {ref} from 'vue'
- export const useUserInfoStore = defineStore('userInfo',()=>{
+ export const InfoStore = defineStore('Info',()=>{
     //定义状态相关的内容
 
     const info = ref({})
@@ -22,4 +43,3 @@ import {ref} from 'vue'
 
 },{persist:true})
 
-//export default useUserInfoStore;
