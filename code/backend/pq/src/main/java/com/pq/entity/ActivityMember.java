@@ -1,5 +1,7 @@
 package com.pq.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,6 +14,7 @@ import java.util.Date;
 @Accessors(chain = true)
 @TableName("activity_member")
 public class ActivityMember {
+    @TableId(value = "id", type = IdType.AUTO)
     private int id;
     private int activityId;
     private int userId;

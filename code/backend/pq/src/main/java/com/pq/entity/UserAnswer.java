@@ -1,26 +1,31 @@
 package com.pq.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
+
 import java.util.Date;
 
+@Data
+@EqualsAndHashCode(callSuper = false)
+@Accessors(chain = true)
+@TableName("user_answer")
 public class UserAnswer {
+    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
-    private Integer userId;
-    private Integer questionId;
-    private Integer selectedOption;
-    private Date answerTime;
-    private Integer isCorret; // 建议后续数据库字段改为isCorrect
 
-    // getter/setter
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
-    public Integer getUserId() { return userId; }
-    public void setUserId(Integer userId) { this.userId = userId; }
-    public Integer getQuestionId() { return questionId; }
-    public void setQuestionId(Integer questionId) { this.questionId = questionId; }
-    public Integer getSelectedOption() { return selectedOption; }
-    public void setSelectedOption(Integer selectedOption) { this.selectedOption = selectedOption; }
-    public Date getAnswerTime() { return answerTime; }
-    public void setAnswerTime(Date answerTime) { this.answerTime = answerTime; }
-    public Integer getIsCorret() { return isCorret; }
-    public void setIsCorret(Integer isCorret) { this.isCorret = isCorret; }
+    private Integer userId;
+
+    private Integer popQuizId;
+
+    private String questionIds;
+
+    private String options;
+
+    private Date answerTime;
+
+    private String isCorrect;
 } 
