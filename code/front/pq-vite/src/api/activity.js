@@ -14,3 +14,14 @@ export function fetchJoinedActivities() {
 export function joinActivity(inviteCode) {
   return request.post('/activity/add', { inviteCode })
 }
+//演讲中发送题目
+export function sendPopquiz({ activityId, questionCount, lastTime, text }) {
+  return request.post('/quiz/popQuiz', null, {
+    params: {
+      activityId,
+      questionCount,
+      lastTime,
+      text
+    }
+  })
+}

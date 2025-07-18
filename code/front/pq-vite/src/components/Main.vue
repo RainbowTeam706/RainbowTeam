@@ -196,7 +196,9 @@ const activeTab = ref("classroom");
 import { useUserInfoStore } from '../stores/userInfo'
 const userInfoStore = useUserInfoStore()
 //console.log(userInfoStore.id, userInfoStore.username, userInfoStore.nickname)
-
+//将活动列表存下来，后续可用
+import { useActivityStore } from '../stores/activity'
+const activityStore = useActivityStore()
 // 活动对象结构说明
 const activities = ref([
   {
@@ -242,6 +244,7 @@ async function loadActivities() {
   } catch (e) {
     ElMessage.error('获取活动失败')
   }
+  activityStore.setActivities(activities.value) // 新增：同步到全局 store
 }
 // 页面加载时和筛选条件变化时都要加载
 onMounted(loadActivities)
@@ -288,12 +291,20 @@ function getStatusType(status) {
   }
 }
 
-import { useInfoStore } from "../stores/userInfo";
-const InfoStore = useInfoStore();
+
 function handleActivityClick(activity) {
   // 跳转到活动详情页面，对应的活动详情内容 传入info store 
-  InfoStore.setInfo(activity);
-  router.push('/speechStudent');
+  // InfoStore.setInfo(activity);
+ //根据是否为发起人决定页面跳转
+  const userId = userInfoStore.id
+  if(activity.createId === userId){ // 跳转到演讲者页面
+    console.log('okkk')
+    router.push({ name: 'speechTeacher', params: { id: activity.id } })
+  }
+  else { //跳转到听众界面
+    router.push({ name: 'speechStudent', params: { id: activity.id } })
+  }
+ //  router.push('/speechStudent');
 }
 
 // 弹窗控制

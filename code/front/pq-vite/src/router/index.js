@@ -18,10 +18,19 @@ const routes = [
     { path: '/main', component: Main },
     { path: '', redirect: 'main' },
   ]},
-  { path: '/speechStudent', component: SpeechStudent },
-  { path: '/speechTeacher', component: SpeechTeacher },
-  { path: '/popquizTeacher', component: PopquizTeacher },
+  { path: '/speechStudent/:id', name: 'speechStudent', component: SpeechStudent },
+  { path: '/speechTeacher/:id', name: 'speechTeacher', component: SpeechTeacher ,
+    children: [
+      {
+        path: 'popquiz',
+        name: 'popquizTeacher',
+        component: PopquizTeacher
+      },
+      // 你可以添加其他子页面
 
+    ]
+  },
+ 
 
 ]
 
