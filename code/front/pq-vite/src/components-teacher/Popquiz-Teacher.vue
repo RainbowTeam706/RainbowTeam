@@ -1,4 +1,4 @@
-<!-- 此页面为“老师”点击活动页面底部导航的“出题”按钮后跳转，显示POPquiz出题按钮，录音/文件提取出的文字显示框（可编辑），底部导航 -->
+<!-- 此页面为“老师”点击主页面某一具体活动后跳转，显示活动信息、PPT预览、活动详情、底部导航 -->
 <template>
   <div class="speech-page">
     <!-- 顶部导航栏 -->
@@ -22,17 +22,39 @@
     </div>
     <!-- 内容区 -->
 
-    
+    <el-scrollbar max-height="560px">
+      <div class="main-content">
+        <!-- 活动详情 -->
+        <div class="detail-content">
+          <div class="invite-code">邀请码：{{ activity.inviteCode }}</div>
+          <ul class="activity-detail-list">
+            <li><span class="item-label">标题：</span>{{ activity.title }}</li>
+            <!-- <li><span class="item-label">内容：</span>{{ activity.content }}</li> -->
+            <li>
+              <span class="item-label">地点：</span>{{ activity.location }}
+            </li>
+            <li><span class="item-label">时间：</span></li>
+            <li>{{ activity.startTime }} ~ {{ activity.endTime }}</li>
+            <li><span class="item-label">人数：</span>{{ activity.curNum }}</li>
+            <!-- <li><span class="item-label">状态：</span><el-tag :type="getStatusType(activity.status)" size="small" class="status-tag">{{ getStatusText(activity.status) }}</el-tag></li> -->
+          </ul>
+        </div>
+        <!-- PPT预览框 /////////////////////////////////-->
+        <div class="ppt-preview">
+          <template v-if="activity.pptUrl">
+            <iframe
+              :src="`${activity.pptUrl}?x-oss-process=document/preview`"
+              class="ppt-iframe"
+              frameborder="0"
+              allowfullscreen
+            ></iframe>
+          </template>
+          <div v-else class="ppt-placeholder">暂无PPT课件</div>
+        </div>
+      </div>
+    </el-scrollbar>
     <!-- 底部导航栏 -->
     <div class="bottom-nav-student">
-      <div
-        class="nav-item"
-        :class="{ active: activeTab === 'test' }"
-        @click="activeTab = 'test'"
-      >
-        <el-icon><Document /></el-icon>
-        <span>测试列表</span>
-      </div>
       <div
         class="nav-item"
         :class="[
@@ -46,6 +68,14 @@
       >
         <el-icon><Edit /></el-icon>
         <span>教师出题</span>
+      </div>
+      <div
+        class="nav-item"
+        :class="{ active: activeTab === 'test' }"
+        @click="activeTab = 'test'"
+      >
+        <el-icon><Document /></el-icon>
+        <span>测试列表</span>
       </div>
       <div
         class="nav-item"
@@ -76,15 +106,15 @@ import {
   Comment,
   Edit,
 } from "@element-plus/icons-vue";
-
 import { useUserInfoStore } from '../stores/userInfo.js'
-import { useInfoStore } from '../stores/userInfo.js'
+
 const userInfoStore = useUserInfoStore()
 const userInfo = userInfoStore.info
-const infoStore = useInfoStore()
-const activity = infoStore.info
 
-const activeTab = ref("popquiz");
+// 测试PPT链接/////////////////////////
+//activity.pptUrl = 'https://pq-ppt-test.oss-cn-shanghai.aliyuncs.com/ppt-test/%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8FPPT_%E6%B5%8B%E8%AF%95.ppt'
+
+const activeTab = ref("");
 const getStatusText = (status) => {
   switch (status) {
     case 0:

@@ -82,7 +82,7 @@ import { useRouter } from 'vue-router'
 import { useUserInfoStore } from '../stores/userInfo'
 
 // 新增：导入login和register API
-import { login, register } from '../api/user'
+import { login, register, getUserInfo } from '../api/user'
 // 新增：导入setToken方法
 import { setToken } from '../stores/token'
 
@@ -138,6 +138,7 @@ async function handleSubmit() {
           if (userRes.data && userRes.data.success) {
             userInfoStore.setUserInfo(userRes.data.data)
           }
+          console.log('iiiiiii')
           router.push('/main')
         } else {
           ElMessage.error('用户名或密码错误')
