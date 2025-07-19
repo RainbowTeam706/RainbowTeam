@@ -9,6 +9,7 @@ import com.pq.service.IActivityService;
 import com.pq.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -80,6 +81,9 @@ public class ActivityController {
         List<ActivityMember> activityMemberList = activityMemberService.query().select("activityId")
                 .eq("userId",UserHolder.getUser().getId())
                 .list();
+        if(activityMemberList.isEmpty()){
+            return Result.ok();
+        }
         List<Integer> ids = activityMemberList.stream()
                 .map(ActivityMember::getActivityId)
                 .collect(Collectors.toList());
