@@ -5,7 +5,6 @@ import Myself from '../components/Myself.vue'
 import NavBottom from '../components/NavBottom.vue'
 import SpeechStudent from '../components-student/Speech-Student.vue'
 import SpeechTeacher from '../components-teacher/Speech-Teacher.vue'
-import PopquizTeacher from '../components-teacher/Popquiz-Teacher.vue'
 
 
 const routes = [
@@ -19,17 +18,7 @@ const routes = [
     { path: '', redirect: 'main' },
   ]},
   { path: '/speechStudent/:id', name: 'speechStudent', component: SpeechStudent },
-  { path: '/speechTeacher/:id', name: 'speechTeacher', component: SpeechTeacher ,
-    children: [
-      {
-        path: 'popquiz',
-        name: 'popquizTeacher',
-        component: PopquizTeacher
-      },
-      // 你可以添加其他子页面
-
-    ]
-  },
+  { path: '/speechTeacher/:id', name: 'speechTeacher', component: SpeechTeacher },
  
 
 ]

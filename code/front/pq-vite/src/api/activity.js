@@ -25,3 +25,17 @@ export function sendPopquiz({ activityId, questionCount, lastTime, text }) {
     }
   })
 }
+
+export function submit(submitData) {
+  return request.post(`/quiz/admit?popQuizId=${submitData.popQuizId}&userId=${submitData.userId}`, submitData.answers)
+}
+
+export function ExamList(activityId) {
+  return request.get(`/quiz/list/${activityId}`)
+}
+export function ShowTestService(popQuizId,userId) {
+  return request.get(`/quiz/result/${popQuizId}/${userId}`)
+}
+export function GetExamStat(popQuizId) {
+  return request.get(`/quiz/stat/${popQuizId}`)
+}
