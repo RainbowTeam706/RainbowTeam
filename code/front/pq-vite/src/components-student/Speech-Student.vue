@@ -33,19 +33,38 @@
     </el-scrollbar>
     
     
-    <!-- 底部导航栏 -->
-    <div class="bottom-nav-student">
-      <div class="nav-item" :class="{ active: activeTab === 'test' }" @click="showTestList">
+    <!-- 底部功能按钮组 -->
+    <div class="bottom-action-bar">
+      <div class="action-buttons-container">
+        <!-- 测试列表按钮 -->
+        <el-button
+          :type="activeTab === 'test' ? 'primary' : ''"
+          class="action-btn"
+          @click="showTestList"
+        >
         <el-icon><Document /></el-icon>
         <span>测试列表</span>
-      </div>
-      <div class="nav-item" :class="{ active: activeTab === 'feedback' }" @click="activeTab = 'feedback'">
+        </el-button>
+
+        <!-- 反馈按钮 -->
+        <el-button
+          :type="activeTab === 'feedback' ? 'primary' : ''"
+          class="action-btn"
+          @click="goToFeedback"
+        >
         <el-icon><ChatDotRound /></el-icon>
         <span>反馈</span>
-      </div>
-      <div class="nav-item" :class="{ active: activeTab === 'comment' }" @click="activeTab = 'comment'">
+        </el-button>
+
+        <!-- 评论区按钮 -->
+        <el-button
+          :type="activeTab === 'comment' ? 'primary' : ''"
+          class="action-btn"
+          @click="showComment"
+        >
         <el-icon><Comment /></el-icon>
         <span>评论区</span>
+        </el-button>
       </div>
     </div>
 
@@ -294,17 +313,262 @@
         <span>加载中...</span>
       </div>
     </el-dialog>
+
+    <!-- 反馈弹窗 -->
+    <el-dialog
+      v-model="feedbackDialogVisible"
+      title="💬 课堂反馈"
+      width="90%"
+      :close-on-click-modal="false"
+      class="feedback-dialog"
+    >
+      <div class="feedback-content">
+        <div class="feedback-header">
+          <span class="feedback-title">课堂反馈</span>
+          <el-button
+            type="primary"
+            size="small"
+            @click="refreshFeedback"
+            :loading="loadingFeedback"
+          >
+            刷新
+          </el-button>
+        </div>
+        <div class="feedback-body">
+          <div class="feedback-stats">
+            <!-- 节奏反馈 -->
+            <div class="feedback-card">
+              <h4 class="card-title">课堂节奏</h4>
+              <div class="feedback-chart">
+                <div
+                  v-for="type in ['fast', 'normal', 'slow']"
+                  :key="type"
+                  class="chart-item"
+                  :class="{
+                    'my-selected': hasSubmittedFeedback && myFeedback.pace === type,
+                    'clickable': !hasSubmittedFeedback,
+                    'selected': !hasSubmittedFeedback && myFeedback.pace === type
+                  }"
+                  @click="!hasSubmittedFeedback && (myFeedback.pace = type)"
+                  style="cursor: pointer;"
+                >
+                  <span class="chart-label">{{ type === 'fast' ? '太快' : type === 'normal' ? '正好' : '太慢' }}</span>
+                  <div class="chart-bar">
+                    <div
+                      class="chart-fill"
+                      :class="hasSubmittedFeedback ? type : 'unsubmitted'"
+                      :style="hasSubmittedFeedback ? { width: getFeedbackPercentage('pace', type) + '%' } : { width: myFeedback.pace === type ? '100%' : '0%' }"
+                    ></div>
+                  </div>
+                  <span class="chart-value">
+                    <template v-if="hasSubmittedFeedback">
+                      {{ (feedbackData.pace[type] || 0) + '人' }}
+                      <el-icon v-if="myFeedback.pace === type" class="selected-icon"><Check /></el-icon>
+                    </template>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <!-- 难度反馈 -->
+            <div class="feedback-card">
+              <h4 class="card-title">内容难度</h4>
+              <div class="feedback-chart">
+                <div
+                  v-for="type in ['hard', 'normal', 'easy']"
+                  :key="type"
+                  class="chart-item"
+                  :class="{
+                    'my-selected': hasSubmittedFeedback && myFeedback.difficulty === type,
+                    'clickable': !hasSubmittedFeedback,
+                    'selected': !hasSubmittedFeedback && myFeedback.difficulty === type
+                  }"
+                  @click="!hasSubmittedFeedback && (myFeedback.difficulty = type)"
+                  style="cursor: pointer;"
+                >
+                  <span class="chart-label">{{ type === 'hard' ? '太难' : type === 'normal' ? '适中' : '太易' }}</span>
+                  <div class="chart-bar">
+                    <div
+                      class="chart-fill"
+                      :class="hasSubmittedFeedback ? type : 'unsubmitted'"
+                      :style="hasSubmittedFeedback ? { width: getFeedbackPercentage('difficulty', type) + '%' } : { width: myFeedback.difficulty === type ? '100%' : '0%' }"
+                    ></div>
+                  </div>
+                  <span class="chart-value">
+                    <template v-if="hasSubmittedFeedback">
+                      {{ (feedbackData.difficulty[type] || 0) + '人' }}
+                      <el-icon v-if="myFeedback.difficulty === type" class="selected-icon"><Check /></el-icon>
+                    </template>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <!-- 理解程度 -->
+            <div class="feedback-card">
+              <h4 class="card-title">理解程度</h4>
+              <div class="feedback-chart">
+                <div
+                  v-for="type in ['clear', 'confused']"
+                  :key="type"
+                  class="chart-item"
+                  :class="{
+                    'my-selected': hasSubmittedFeedback && myFeedback.understanding === type,
+                    'clickable': !hasSubmittedFeedback,
+                    'selected': !hasSubmittedFeedback && myFeedback.understanding === type
+                  }"
+                  @click="!hasSubmittedFeedback && (myFeedback.understanding = type)"
+                  style="cursor: pointer;"
+                >
+                  <span class="chart-label">{{ type === 'clear' ? '清楚' : '困惑' }}</span>
+                  <div class="chart-bar">
+                    <div
+                      class="chart-fill"
+                      :class="hasSubmittedFeedback ? type : 'unsubmitted'"
+                      :style="hasSubmittedFeedback ? { width: getFeedbackPercentage('understanding', type) + '%' } : { width: myFeedback.understanding === type ? '100%' : '0%' }"
+                    ></div>
+                  </div>
+                  <span class="chart-value">
+                    <template v-if="hasSubmittedFeedback">
+                      {{ (feedbackData.understanding[type] || 0) + '人' }}
+                      <el-icon v-if="myFeedback.understanding === type" class="selected-icon"><Check /></el-icon>
+                    </template>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 提交按钮 -->
+          <div style="text-align:center;margin-top:24px;">
+            <el-button type="primary" size="large" :loading="submittingFeedback" :disabled="hasSubmittedFeedback" @click="submitFeedbackClick">提交反馈</el-button>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 评论区弹窗 -->
+    <el-dialog
+      v-model="commentDialogVisible"
+      title="💬 我的提问"
+      width="90%"
+      :close-on-click-modal="false"
+      class="comment-dialog"
+    >
+      <div class="comment-content">
+        <div class="comment-header">
+          <span class="comment-title">我的提问列表</span>
+          <el-button
+            type="primary"
+            size="small"
+            @click="refreshComments"
+            :loading="loadingComments"
+          >
+            刷新
+          </el-button>
+        </div>
+
+        <div class="comment-body">
+          <!-- 筛选按钮 -->
+          <div class="filter-buttons">
+            <el-button
+              :type="commentFilter === 'all' ? 'primary' : ''"
+              size="small"
+              @click="commentFilter = 'all'"
+            >
+              全部 ({{ commentData.questions.length }})
+            </el-button>
+            <el-button
+              :type="commentFilter === 'unanswered' ? 'primary' : ''"
+              size="small"
+              @click="commentFilter = 'unanswered'"
+            >
+              未解答 ({{ unansweredCount }})
+            </el-button>
+            <el-button
+              :type="commentFilter === 'answered' ? 'primary' : ''"
+              size="small"
+              @click="commentFilter = 'answered'"
+            >
+              已解答 ({{ answeredCount }})
+            </el-button>
+          </div>
+
+          <!-- 提问区域 -->
+          <div class="question-input-section">
+            <h4 class="section-title">
+              <el-icon><ChatDotRound /></el-icon>
+              向老师提问
+            </h4>
+            <div class="question-form">
+              <el-input
+                v-model="newQuestion"
+                type="textarea"
+                :rows="3"
+                placeholder="请输入您的问题..."
+                maxlength="500"
+                show-word-limit
+              />
+              <div class="question-options">
+                <el-checkbox v-model="isAnonymous">匿名提问</el-checkbox>
+                <el-button
+                  type="primary"
+                  @click="submitNewQuestion"
+                  :loading="submittingQuestion"
+                  :disabled="!newQuestion.trim()"
+                >
+                  提交问题
+                </el-button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 问题列表 -->
+          <div class="questions-list">
+            <div
+              v-for="question in filteredQuestions"
+              :key="question.id"
+              class="question-item"
+              :class="{
+                'answered': question.answered,
+                'unanswered': !question.answered
+              }"
+            >
+              <div class="question-header">
+                <span class="question-time">{{ question.time }}</span>
+                <div class="question-tags">
+                  <el-tag v-if="question.anonymous" size="small" type="info">匿名</el-tag>
+                  <el-tag v-if="question.answered" size="small" type="success">
+                    <el-icon><Check /></el-icon>
+                    已解答
+                  </el-tag>
+                  <el-tag v-if="!question.answered" size="small" type="warning">
+                    <el-icon><QuestionFilled /></el-icon>
+                    待解答
+                  </el-tag>
+                </div>
+              </div>
+              <div class="question-content">{{ question.content }}</div>
+            </div>
+
+            <!-- 空状态 -->
+            <div v-if="filteredQuestions.length === 0" class="empty-state">
+              <el-icon size="48"><ChatDotRound /></el-icon>
+              <p>{{ getEmptyStateText() }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { ArrowLeft, Document, ChatDotRound, Comment, CircleCheck, CircleClose, Loading, Timer } from '@element-plus/icons-vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ArrowLeft, Document, ChatDotRound, Comment, CircleCheck, CircleClose, Loading, Timer, Check, QuestionFilled, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserInfoStore } from '../stores/userInfo.js'
 import { useActivityStore } from '../stores/activity.js'
 import { useRoute } from 'vue-router'
 import { submit, ExamList, ShowTestService } from '../api/activity.js'
+import { submitFeedback, submitQuestion, getFeedbackStats, getQuestions, getMyFeedbackHistory } from '../api/feedback.js'
 
 const userInfoStore = useUserInfoStore()
 const activityStore = useActivityStore()
@@ -340,6 +604,33 @@ let timer = null
 const isSubmitting = ref(false);
 let quizSessionId = null;
 
+// 反馈相关状态
+const feedbackDialogVisible = ref(false)
+const feedbackData = ref({
+  pace: { fast: 0, normal: 0, slow: 0 },
+  difficulty: { hard: 0, normal: 0, easy: 0 },
+  understanding: { clear: 0, confused: 0 }
+})
+const myFeedback = ref({
+  pace: 'normal',
+  difficulty: 'normal',
+  understanding: 'clear'
+})
+const loadingFeedback = ref(false)
+const submittingFeedback = ref(false)
+const hasSubmittedFeedback = ref(false)
+
+// 评论区相关状态
+const commentDialogVisible = ref(false)
+const commentData = ref({
+  questions: []
+})
+const commentFilter = ref('all')
+const newQuestion = ref('')
+const isAnonymous = ref(false)
+const submittingQuestion = ref(false)
+const loadingComments = ref(false)
+
 // 计算属性
 const currentQuestion = computed(() => {
   const question = quizData.value[currentQuestionIndex.value] || null
@@ -350,6 +641,26 @@ const isAllAnswered = computed(() => {
   return quizData.value.length > 0 &&
     quizData.value.every((q, idx) => selectedAnswers.value[idx] !== undefined && selectedAnswers.value[idx] !== null)
 })
+
+// 评论区计算属性
+const filteredQuestions = computed(() => {
+  switch (commentFilter.value) {
+    case 'unanswered':
+      return commentData.value.questions.filter(q => !q.answered)
+    case 'answered':
+      return commentData.value.questions.filter(q => q.answered)
+    default:
+      return commentData.value.questions
+  }
+})
+
+const unansweredCount = computed(() =>
+  commentData.value.questions.filter(q => !q.answered).length
+)
+
+const answeredCount = computed(() =>
+  commentData.value.questions.filter(q => q.answered).length
+)
 
 // 状态文本和类型
 const getStatusText = (status) => {
@@ -825,6 +1136,7 @@ onMounted(() => {
       connectWebSocket()
     }
   }, 1000)
+  // checkMyFeedback() // 移除这里的自动调用
 })
 
 // 组件卸载时断开连接
@@ -852,6 +1164,218 @@ function formatDate(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleString('zh-CN', { hour12: false });
 }
+
+// 获取反馈百分比
+const getFeedbackPercentage = (category, option) => {
+  let total = 0;
+  let count = 0;
+  
+  if (category === 'pace') {
+    total = feedbackData.value.pace.fast + feedbackData.value.pace.normal + feedbackData.value.pace.slow;
+    count = feedbackData.value.pace[option] || 0;
+  } else if (category === 'difficulty') {
+    total = feedbackData.value.difficulty.hard + feedbackData.value.difficulty.normal + feedbackData.value.difficulty.easy;
+    count = feedbackData.value.difficulty[option] || 0;
+  } else if (category === 'understanding') {
+    total = feedbackData.value.understanding.clear + feedbackData.value.understanding.confused;
+    count = feedbackData.value.understanding[option] || 0;
+  }
+  
+  if (total === 0) return 0;
+  return Math.round((count / total) * 100);
+}
+
+// 刷新反馈数据
+const refreshFeedback = async () => {
+  loadingFeedback.value = true;
+  try {
+    // 获取反馈统计数据
+    const statsResult = await getFeedbackStats(route.params.id);
+    if (statsResult.data && statsResult.data.success) {
+      const stats = statsResult.data.data;
+      feedbackData.value.pace = stats.pace || { fast: 0, normal: 0, slow: 0 };
+      feedbackData.value.difficulty = stats.difficulty || { hard: 0, normal: 0, easy: 0 };
+      feedbackData.value.understanding = stats.understanding || { clear: 0, confused: 0 };
+    }
+
+    ElMessage.success('反馈数据已刷新');
+  } catch (error) {
+    console.error('获取反馈数据失败:', error);
+    ElMessage.error('获取反馈数据失败: ' + error.message);
+  } finally {
+    loadingFeedback.value = false;
+  }
+}
+
+
+
+
+
+// 获取空状态文本
+const getEmptyStateText = () => {
+  if (commentFilter.value === 'all') {
+    return '您还没有提出过问题';
+  } else if (commentFilter.value === 'unanswered') {
+    return '您没有待解答的问题';
+  } else if (commentFilter.value === 'answered') {
+    return '您没有已解答的问题';
+  }
+  return '您还没有提出过问题';
+};
+
+// 提交新问题
+const submitNewQuestion = async () => {
+  if (!route.params.id) {
+    ElMessage.error('当前没有活动，无法提交问题');
+    return;
+  }
+  if (!newQuestion.value.trim()) {
+    ElMessage.warning('问题内容不能为空');
+    return;
+  }
+  submittingQuestion.value = true;
+  try {
+    const questionData = {
+      content: newQuestion.value,
+      anonymous: isAnonymous.value
+    };
+    console.log('准备提交新问题:', questionData);
+    const result = await submitQuestion(route.params.id, questionData);
+    if (result.data && result.data.success) {
+      ElMessage.success('问题提交成功！');
+      newQuestion.value = ''; // 清空输入框
+      isAnonymous.value = false; // 重置匿名选项
+      refreshComments(); // 刷新评论区数据
+    } else {
+      ElMessage.error('问题提交失败: ' + (result.data?.message || '未知错误'));
+    }
+  } catch (error) {
+    console.error('提交新问题时发生错误:', error);
+    ElMessage.error('提交新问题失败: ' + error.message);
+  } finally {
+    submittingQuestion.value = false;
+  }
+};
+
+const goToFeedback = () => {
+  feedbackDialogVisible.value = true;
+  checkMyFeedback(); // 点击反馈按钮时才判断
+};
+
+// 格式化时间显示
+const formatTimeForDisplay = (timeString) => {
+  if (!timeString) return '';
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.error('时间格式化失败:', error);
+    return timeString;
+  }
+};
+
+const submitFeedbackClick = async () => {
+  submittingFeedback.value = true;
+  try {
+    const feedbackData = {
+      pace: myFeedback.value.pace,
+      difficulty: myFeedback.value.difficulty,
+      understanding: myFeedback.value.understanding,
+      userId // 新增，传当前用户id
+    };
+    const result = await submitFeedback(route.params.id, feedbackData);
+    if (result.data && result.data.success) {
+      ElMessage.success('反馈提交成功！');
+      hasSubmittedFeedback.value = true;
+      // 刷新反馈数据以显示最新统计
+     await checkMyFeedback();
+     // await refreshFeedback();
+    } else {
+      ElMessage.error('反馈提交失败: ' + (result.data?.message || '未知错误'));
+    }
+  } catch (error) {
+    console.error('提交反馈时发生错误:', error);
+    ElMessage.error('提交反馈失败: ' + error.message);
+  } finally {
+    submittingFeedback.value = false;
+  }
+};
+
+
+
+const refreshComments = async () => {
+  loadingComments.value = true
+  try {
+    const result = await getQuestions(route.params.id, {
+      status: 'all',
+      page: 1,
+      size: 100,
+      userId: userId
+    })
+    if (result.data && result.data.success) {
+      const questions = result.data.data.questions || []
+      commentData.value.questions = questions.map(q => ({
+        id: q.id,
+        content: q.content,
+        time: formatTimeForDisplay(q.time),
+        anonymous: q.anonymous,
+        answered: q.answered
+      }))
+      console.log('评论列表数据:', commentData.value.questions)
+    } else {
+      ElMessage.error('获取评论列表失败: ' + (result.errorMsg || '未知错误'))
+    }
+  } catch (error) {
+    console.error('获取评论列表失败:', error)
+    ElMessage.error('获取评论列表失败: ' + error.message)
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+const showComment = () => {
+  activeTab.value = 'comment';
+  commentDialogVisible.value = true;
+  refreshComments();
+};
+
+// 监听评论区弹窗关闭，重置按钮状态
+watch(commentDialogVisible, (newVal) => {
+  if (!newVal && activeTab.value === 'comment') {
+    // 弹窗关闭时，如果当前是评论区状态，则重置为默认状态
+    activeTab.value = ''
+  }
+});
+
+// 页面加载时判断是否已提交反馈
+const checkMyFeedback = async () => {
+  const paceMap = ['fast', 'normal', 'slow']
+  const difficultyMap = ['hard', 'normal', 'easy']
+  const understandingMap = ['clear', 'confused']
+  try {
+    const res = await getMyFeedbackHistory(route.params.id, userId)
+    if (res.data && res.data.success && res.data.data) {
+      hasSubmittedFeedback.value = true
+      myFeedback.value = {
+        pace: paceMap[res.data.data.pace],
+        difficulty: difficultyMap[res.data.data.difficulty],
+        understanding: understandingMap[res.data.data.understanding]
+      }
+      await refreshFeedback()
+    } else {
+      hasSubmittedFeedback.value = false
+      myFeedback.value = { pace: '', difficulty: '', understanding: '' }
+      await refreshFeedback() // 修复：未提交时也要刷新统计条
+    }
+  } catch {
+    hasSubmittedFeedback.value = false
+    myFeedback.value = { pace: '', difficulty: '', understanding: '' }
+    await refreshFeedback()
+  }
+}
 </script>
 
 <style scoped>
@@ -862,6 +1386,7 @@ function formatDate(dateStr) {
   flex-direction: column;
   overflow-x: hidden;
   position: relative;
+  padding-bottom: 90px; /* 为底部导航栏预留空间 */
 }
 
 
@@ -1029,42 +1554,132 @@ function formatDate(dateStr) {
   color: #222;
 }
 
-
-.bottom-nav-student {
-  background: white;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  padding: 8px 0;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+/* 底部功能按钮组样式 */
+.bottom-action-bar {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-top: 1px solid #e9ecef;
+  padding: 16px 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 10;
+  backdrop-filter: blur(10px);
 }
 
+.action-buttons-container {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
 
-.bottom-nav-student .nav-item {
+.action-btn {
   flex: 1;
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: #909399;
+  padding: 10px 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
 }
 
+.action-btn:not(.el-button--primary) {
+  background: white;
+  color: #606266;
+  border-color: #dcdfe6;
+}
 
-.bottom-nav-student .nav-item.active {
+.action-btn:not(.el-button--primary):hover {
+  background: #f5f7fa;
+  border-color: #409eff;
   color: #409eff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.2);
 }
 
+.action-btn.el-button--primary {
+  background: linear-gradient(135deg, #409eff 0%, #3a8ee6 100%);
+  border-color: #409eff;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.3);
+}
 
-.bottom-nav-student .nav-item span {
+.action-btn.el-button--primary:hover {
+  background: linear-gradient(135deg, #3a8ee6 0%, #337ecc 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.4);
+}
+
+.action-btn .el-icon {
+  font-size: 1.2rem;
+}
+
+.action-btn span {
   font-size: 0.8rem;
-  font-weight: 500;
+  line-height: 1;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .bottom-action-bar {
+    padding: 12px 16px;
+  }
+
+  .action-buttons-container {
+    gap: 12px;
+    max-width: 360px;
+  }
+
+  .action-btn {
+    min-height: 48px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .action-btn .el-icon {
+    font-size: 1.1rem;
+  }
+
+  .action-btn span {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom-action-bar {
+    padding: 10px 12px;
+  }
+
+  .action-buttons-container {
+    gap: 8px;
+    max-width: 300px;
+  }
+
+  .action-btn {
+    min-height: 44px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    border-radius: 12px;
+  }
+
+  .action-btn .el-icon {
+    font-size: 1rem;
+  }
+
+  .action-btn span {
+    font-size: 0.7rem;
+  }
 }
 
 /* WebSocket 状态指示器 */
@@ -2255,5 +2870,371 @@ function formatDate(dateStr) {
 .loading-result span {
   font-size: 0.9rem;
   color: #909399;
+}
+
+/* 反馈弹窗样式 */
+.feedback-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  max-width: 90vw;
+  margin: 5vh auto;
+}
+
+.feedback-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 20px;
+}
+
+.feedback-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+}
+
+.feedback-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.feedback-content {
+  padding: 20px;
+}
+
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.feedback-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #303133;
+}
+
+.feedback-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.feedback-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.feedback-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #ebeef5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s;
+}
+
+.feedback-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chart-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chart-label {
+  min-width: 40px;
+  font-size: 0.9rem;
+  color: #606266;
+  font-weight: 500;
+}
+
+.chart-bar {
+  flex: 1;
+  height: 20px;
+  background: #f5f7fa;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+.chart-fill.fast { background: linear-gradient(90deg, #ff6b6b, #ee5a52); }
+.chart-fill.normal { background: linear-gradient(90deg, #51cf66, #40c057); }
+.chart-fill.slow { background: linear-gradient(90deg, #ffd43b, #fab005); }
+.chart-fill.hard { background: linear-gradient(90deg, #ff6b6b, #ee5a52); }
+.chart-fill.easy { background: linear-gradient(90deg, #339af0, #228be6); }
+.chart-fill.clear { background: linear-gradient(90deg, #51cf66, #40c057); }
+.chart-fill.confused { background: linear-gradient(90deg, #ff6b6b, #ee5a52); }
+
+.chart-value {
+  min-width: 40px;
+  font-size: 0.9rem;
+  color: #303133;
+  font-weight: 600;
+  text-align: right;
+}
+
+.chart-item.my-selected {
+  border: 2px solid #67c23a !important;
+  background: #f0f9eb !important;
+  border-radius: 10px;
+}
+.selected-icon {
+  color: #67c23a;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+.comment-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  max-width: 90vw;
+  margin: 5vh auto;
+}
+
+.comment-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 20px;
+}
+
+.comment-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+}
+
+.comment-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.comment-content {
+  padding: 20px;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comment-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.comment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comment-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.question-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.question-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.question-form .el-input {
+  margin-bottom: 12px;
+}
+
+.question-form .el-input__inner {
+  border-radius: 8px;
+  border: 1px solid #dcdfe6;
+  padding: 10px 15px;
+  font-size: 0.95rem;
+}
+
+.question-form .el-input__inner:focus {
+  border-color: #409eff;
+}
+
+.question-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.question-options .el-checkbox {
+  font-size: 0.9rem;
+}
+
+.question-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.question-actions .el-button {
+  flex: 1;
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.question-item {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 12px 16px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.question-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.question-item.answered {
+  background-color: #e1f3d8;
+  border-color: #67c23a;
+  color: #155724;
+}
+
+.question-item.unanswered {
+  background-color: #fde2e2;
+  border-color: #f56c6c;
+  color: #721c24;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.question-time {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.question-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.question-tags .el-tag {
+  font-size: 0.75rem;
+}
+
+.question-content {
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .comment-content {
+    padding: 16px;
+  }
+
+  .comment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filter-buttons {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .question-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .comment-content {
+    padding: 12px;
+  }
+
+  .comment-header {
+    gap: 12px;
+  }
+
+  .filter-buttons {
+    gap: 6px;
+  }
+
+  .question-options {
+    gap: 12px;
+  }
+}
+
+.chart-item.my-selected {
+  border: 2px solid #67c23a !important;
+  background: #f0f9eb !important;
+}
+
+.chart-fill.unsubmitted {
+  background: #e0e0e0 !important;
+}
+.chart-item.selected {
+  border: 2px solid #409eff !important;
+  background: #eaf4ff !important;
+  border-radius: 10px;
+}
+.chart-item.clickable:hover {
+  border: 2px solid #409eff !important;
+  background: #f5f7fa !important;
+  border-radius: 10px;
 }
 </style>
