@@ -418,9 +418,12 @@ import {
   Document,
   ChatDotRound,
   Comment,
-  Loading,
+  CircleCheck,
+  CircleClose,
+  Timer,
   Check,
   QuestionFilled,
+  Loading,
 } from "@element-plus/icons-vue";
 import { useRoute } from 'vue-router'
 import { useActivityStore } from '../stores/activity'
