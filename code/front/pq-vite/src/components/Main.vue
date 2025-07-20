@@ -132,7 +132,7 @@
       </template>
     </el-dialog> -->
 <!-- 预定会议弹窗 -->
-<el-dialog v-model="bookDialogVisible" title="预定会议" width="400px"  draggable >
+<el-dialog v-model="bookDialogVisible" title="预定会议" width="400px"  draggable top="5vh" class="custom-book-dialog">
   <el-form :model="bookForm" label-width="80px">
     <el-form-item label="标题">
       <el-input v-model="bookForm.title" placeholder="请输入标题" />
@@ -152,7 +152,7 @@
         value-format="YYYY-MM-DDTHH:mm:ss"
         editable="false"
         :input-attr="{ readonly: true }"
-
+        teleported="false"
       />
     </el-form-item>
     <el-form-item label="结束时间">
@@ -164,7 +164,7 @@
         value-format="YYYY-MM-DDTHH:mm:ss"
         editable="false"
         :input-attr="{ readonly: true }"
-
+        teleported="false"
       />
     </el-form-item>
   </el-form>
@@ -184,7 +184,7 @@ import { ref, computed , reactive} from "vue";
 import { ElMessage } from "element-plus";
 import { School, User } from "@element-plus/icons-vue";
 // 新增：导入获取活动列表API
-import { fetchCreatedActivities, fetchJoinedActivities, joinActivity } from '../api/activity'
+import { fetchCreatedActivities, fetchJoinedActivities, joinActivity, createActivity } from '../api/activity'
 import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router';
 
@@ -351,7 +351,8 @@ function handleQuick() {
   ElMessage.success("已提交时长: " + quickForm.duration + "分钟");
   quickDialogVisible.value = false;
 }
-function handleBook() {
+//创建活动提交方法
+async function handleBook() {
   if (
     !bookForm.title ||
     !bookForm.content ||
@@ -361,9 +362,24 @@ function handleBook() {
   ) {
     return ElMessage.error("请填写完整信息");
   }
-  // 这里可以调用后端接口
-  ElMessage.success("已提交预定");
-  bookDialogVisible.value = false;
+  try {
+    const res = await createActivity({
+      title: bookForm.title,
+      content: bookForm.content,
+      location: bookForm.location,
+      startTime: bookForm.startTime,
+      endTime: bookForm.endTime
+    })
+    if (res.data && res.data.success) {
+      ElMessage.success("活动创建成功！");
+      bookDialogVisible.value = false;
+      await loadActivities(); // 刷新活动列表
+    } else {
+      ElMessage.error(res.data?.message || "创建失败！");
+    }
+  } catch (e) {
+    ElMessage.error("创建活动请求失败！");
+  }
 }
 </script>
 
@@ -647,6 +663,56 @@ function handleBook() {
   .status-tag {
     font-size: 0.75rem;
   }
+}
+
+/* 优化 el-dialog 和 el-picker-panel 在移动端的显示 */
+:deep(.el-dialog__body) {
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+:deep(.el-picker-panel) {
+  max-width: 98vw !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  left: 0 !important;
+  right: auto !important;
+  overflow-y: auto !important;
+  max-height: 60vh !important;
+}
+:deep(.el-picker-panel__footer) {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  z-index: 2;
+}
+:deep(.custom-book-dialog .el-dialog) {
+  left: 5vw !important;
+  right: auto !important;
+  margin: 0 !important;
+  top: 5vh !important;
+  transform: none !important;
+}
+@media (max-width: 600px) {
+  :deep(.el-dialog) {
+    width: 95vw !important;
+    min-width: unset !important;
+    max-width: 98vw !important;
+  }
+  :deep(.custom-book-dialog .el-dialog) {
+    width: 98vw !important;
+    left: 1vw !important;
+    top: 2vh !important;
+  }
+}
+/* 让表单项更紧凑 */
+:deep(.el-form-item) {
+  margin-bottom: 12px !important;
+}
+:deep(.custom-book-dialog .el-picker-panel) {
+  left: 20px !important;
+  right: auto !important;
+  transform: none !important;
 }
 </style>
 

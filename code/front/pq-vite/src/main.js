@@ -18,7 +18,7 @@ app.use(pinia)
 
 
 app.use(router)
-app.use(createPinia())
+// app.use(createPinia())
 app.use(ElementPlus)
 app.mount('#app')
 
