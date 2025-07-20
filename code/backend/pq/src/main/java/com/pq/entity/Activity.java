@@ -36,4 +36,8 @@ public class Activity {
     private int Status;
 
     private int curNum;
+
+
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private String createName;
 }
