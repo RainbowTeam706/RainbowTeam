@@ -289,85 +289,99 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </el-dialog>
 
-          <!-- 学生提问区域 -->
-          <div class="questions-section">
-            <div class="questions-header">
-              <h4 class="questions-title">
-                <el-icon><ChatDotRound /></el-icon>
-                学生提问
-                <el-badge :value="unansweredCount" class="question-badge" v-if="unansweredCount > 0" />
-              </h4>
+    <!-- 评论区弹窗 -->
+    <el-dialog
+      v-model="commentDialogVisible"
+      title="💬 学生提问"
+      width="90%"
+      :close-on-click-modal="false"
+      class="comment-dialog"
+    >
+      <div class="comment-content">
+        <div class="comment-header">
+          <span class="comment-title">学生提问列表</span>
+          <el-button
+            type="primary"
+            size="small"
+            @click="refreshComments"
+            :loading="loadingComments"
+          >
+            刷新
+          </el-button>
+        </div>
 
-              <!-- 筛选按钮 -->
-              <div class="filter-buttons">
+        <div class="comment-body">
+          <!-- 筛选按钮 -->
+          <div class="filter-buttons">
+            <el-button
+              :type="commentFilter === 'all' ? 'primary' : ''"
+              size="small"
+              @click="commentFilter = 'all'"
+            >
+              全部 ({{ commentData.questions.length }})
+            </el-button>
+            <el-button
+              :type="commentFilter === 'unanswered' ? 'primary' : ''"
+              size="small"
+              @click="commentFilter = 'unanswered'"
+            >
+              未解答 ({{ unansweredCountComment }})
+            </el-button>
+            <el-button
+              :type="commentFilter === 'answered' ? 'primary' : ''"
+              size="small"
+              @click="commentFilter = 'answered'"
+            >
+              已解答 ({{ answeredCountComment }})
+            </el-button>
+          </div>
+
+          <div class="questions-list">
+            <div
+              v-for="question in filteredComments"
+              :key="question.id"
+              class="question-item"
+              :class="{
+                'answered': question.answered,
+                'unanswered': !question.answered
+              }"
+            >
+              <div class="question-header">
+                <span class="question-time">{{ question.time }}</span>
+                <div class="question-tags">
+                  <el-tag v-if="question.anonymous" size="small" type="info">匿名</el-tag>
+                  <el-tag v-if="question.answered" size="small" type="success">
+                    <el-icon><Check /></el-icon>
+                    已解答
+                  </el-tag>
+                  <el-tag v-if="!question.answered" size="small" type="warning">
+                    <el-icon><QuestionFilled /></el-icon>
+                    待解答
+                  </el-tag>
+                </div>
+              </div>
+              <div class="question-content">{{ question.content }}</div>
+              <div class="question-actions" v-if="!question.answered">
                 <el-button
-                  :type="questionFilter === 'all' ? 'primary' : ''"
                   size="small"
-                  @click="questionFilter = 'all'"
+                  type="success"
+                  @click="markAsAnswered(question.id)"
+                  :loading="markingAnsweredComment === question.id"
                 >
-                  全部 ({{ feedbackData.questions.length }})
-                </el-button>
-                <el-button
-                  :type="questionFilter === 'unanswered' ? 'primary' : ''"
-                  size="small"
-                  @click="questionFilter = 'unanswered'"
-                >
-                  未解答 ({{ unansweredCount }})
-                </el-button>
-                <el-button
-                  :type="questionFilter === 'answered' ? 'primary' : ''"
-                  size="small"
-                  @click="questionFilter = 'answered'"
-                >
-                  已解答 ({{ answeredCount }})
+                  <el-icon><Check /></el-icon>
+                  标记为已解答
                 </el-button>
               </div>
             </div>
 
-            <div class="questions-list">
-              <div
-                v-for="question in filteredQuestions"
-                :key="question.id"
-                class="question-item"
-                :class="{
-                  'answered': question.answered,
-                  'unanswered': !question.answered
-                }"
-              >
-                <div class="question-header">
-                  <span class="question-time">{{ question.time }}</span>
-                  <div class="question-tags">
-                    <el-tag v-if="question.anonymous" size="small" type="info">匿名</el-tag>
-                    <el-tag v-if="question.answered" size="small" type="success">
-                      <el-icon><Check /></el-icon>
-                      已解答
-                    </el-tag>
-                    <el-tag v-if="!question.answered" size="small" type="warning">
-                      <el-icon><QuestionFilled /></el-icon>
-                      待解答
-                    </el-tag>
-                  </div>
-                </div>
-                <div class="question-content">{{ question.content }}</div>
-                <div class="question-actions" v-if="!question.answered">
-                  <el-button
-                    size="small"
-                    type="success"
-                    @click="markAsAnswered(question.id)"
-                    :loading="markingAnswered === question.id"
-                  >
-                    <el-icon><Check /></el-icon>
-                    标记为已解答
-                  </el-button>
-                </div>
-              </div>
-
-              <!-- 空状态 -->
-              <div v-if="filteredQuestions.length === 0" class="empty-state">
-                <el-icon size="48"><ChatDotRound /></el-icon>
-                <p>{{ getEmptyStateText() }}</p>
-              </div>
+            <!-- 空状态 -->
+            <div v-if="filteredComments.length === 0" class="empty-state">
+              <el-icon size="48"><ChatDotRound /></el-icon>
+              <p>{{ getCommentEmptyStateText() }}</p>
             </div>
           </div>
         </div>
@@ -501,14 +515,20 @@ const loadingTestList = ref(false) // 加载状态
 // 反馈相关状态
 const feedbackDialogVisible = ref(false) // 反馈弹窗
 const loadingFeedback = ref(false) // 加载状态
-const questionFilter = ref('all') // 问题筛选
-const markingAnswered = ref(null) // 正在标记为已解答的问题ID
 
 // 反馈数据
 const feedbackData = ref({
   pace: { fast: 12, normal: 25, slow: 3 },
   difficulty: { hard: 8, normal: 28, easy: 4 },
-  understanding: { clear: 32, confused: 8 },
+  understanding: { clear: 32, confused: 8 }
+})
+
+
+
+
+//评论区相关状态
+const commentDialogVisible = ref(false) // 评论区弹窗
+const commentData = ref({ // 评论区数据
   questions: [
     {
       id: 1,
@@ -540,6 +560,9 @@ const feedbackData = ref({
     }
   ]
 })
+const loadingComments = ref(false) // 评论区加载状态
+const commentFilter = ref('all') // 评论区问题筛选
+const markingAnsweredComment = ref(null) // 正在标记为已解答的评论区问题ID
 
 //查询活动信息
 const route = useRoute()
@@ -548,24 +571,25 @@ const activityStore = useActivityStore()
 const activity = computed(() => activityStore.getActivityById(route.params.id) || {})
 
 // 反馈相关计算属性
-const filteredQuestions = computed(() => {
-  switch (questionFilter.value) {
+const unansweredCountComment = computed(() =>
+  commentData.value.questions.filter(q => !q.answered).length
+)
+
+const answeredCountComment = computed(() =>
+  commentData.value.questions.filter(q => q.answered).length
+)
+
+// 评论区相关计算属性
+const filteredComments = computed(() => {
+  switch (commentFilter.value) {
     case 'unanswered':
-      return feedbackData.value.questions.filter(q => !q.answered)
+      return commentData.value.questions.filter(q => !q.answered)
     case 'answered':
-      return feedbackData.value.questions.filter(q => q.answered)
+      return commentData.value.questions.filter(q => q.answered)
     default:
-      return feedbackData.value.questions
+      return commentData.value.questions
   }
 })
-
-const unansweredCount = computed(() =>
-  feedbackData.value.questions.filter(q => !q.answered).length
-)
-
-const answeredCount = computed(() =>
-  feedbackData.value.questions.filter(q => q.answered).length
-)
 
 // 打开反馈弹窗
 async function goToFeedback() {
@@ -577,6 +601,8 @@ async function goToFeedback() {
 // 切换到评论区
 function showComment() {
   activeTab.value = 'comment'
+  commentDialogVisible.value = true
+  refreshComments() // 刷新评论区数据
 }
 
 // 监听测试列表弹窗关闭，重置按钮状态
@@ -595,6 +621,14 @@ watch(feedbackDialogVisible, (newVal) => {
   }
 })
 
+// 监听评论区弹窗关闭，重置按钮状态
+watch(commentDialogVisible, (newVal) => {
+  if (!newVal && activeTab.value === 'comment') {
+    // 弹窗关闭时，如果当前是评论区状态，则重置为默认状态
+    activeTab.value = ''
+  }
+})
+
 // 反馈相关方法
 // 计算反馈百分比
 function getFeedbackPercentage(category, type) {
@@ -607,30 +641,16 @@ function getFeedbackPercentage(category, type) {
 async function refreshFeedback() {
   loadingFeedback.value = true
   try {
-    // 并行获取反馈统计和问题列表
-    const [statsResponse, questionsResponse] = await Promise.all([
-      getFeedbackStats(route.params.id),
-      getQuestions(route.params.id, { status: 'all', page: 1, size: 100 })
-    ])
-
+    // 获取反馈统计数据
+    
+    const statsResponse = await getFeedbackStats(route.params.id)
+    console.log(route.params.id)
     // 更新反馈统计数据
     if (statsResponse.data && statsResponse.data.success) {
       const stats = statsResponse.data.data
       feedbackData.value.pace = stats.pace || { fast: 0, normal: 0, slow: 0 }
       feedbackData.value.difficulty = stats.difficulty || { hard: 0, normal: 0, easy: 0 }
       feedbackData.value.understanding = stats.understanding || { clear: 0, confused: 0 }
-    }
-
-    // 更新问题列表
-    if (questionsResponse.data && questionsResponse.data.success) {
-      const questions = questionsResponse.data.data.questions || []
-      feedbackData.value.questions = questions.map(q => ({
-        id: q.id,
-        content: q.content,
-        time: formatTimeForDisplay(q.time),
-        anonymous: q.anonymous,
-        answered: q.answered
-      }))
     }
 
     ElMessage.success('反馈数据已刷新')
@@ -642,16 +662,44 @@ async function refreshFeedback() {
   }
 }
 
+// 评论区相关方法
+// 刷新评论区数据
+async function refreshComments() {
+  loadingComments.value = true
+  try {
+    const response = await getQuestions(route.params.id, {
+      status: commentFilter.value === 'all' ? 'all' : commentFilter.value,
+      page: 1,
+      size: 100
+    })
 
+    if (response.data && response.data.success) {
+      const questions = response.data.data.questions || []
+      commentData.value.questions = questions.map(q => ({
+        id: q.id,
+        content: q.content,
+        time: formatTimeForDisplay(q.time),
+        anonymous: q.anonymous,
+        answered: q.answered
+      }))
+    }
+    ElMessage.success('评论区数据已刷新')
+  } catch (error) {
+    console.error('刷新评论区数据失败:', error)
+    ElMessage.error('刷新失败，请稍后重试')
+  } finally {
+    loadingComments.value = false
+  }
+}
 
 // 标记问题已解答
 async function markAsAnswered(questionId) {
   // 防止重复点击
-  if (markingAnswered.value === questionId) {
+  if (markingAnsweredComment.value === questionId) {
     return
   }
 
-  markingAnswered.value = questionId
+  markingAnsweredComment.value = questionId
 
   try {
     // 调用API标记已解答
@@ -659,7 +707,7 @@ async function markAsAnswered(questionId) {
 
     if (response.data && response.data.success) {
       // 立即更新本地状态，提供即时反馈
-      const question = feedbackData.value.questions.find(q => q.id === questionId)
+      const question = commentData.value.questions.find(q => q.id === questionId)
       if (question) {
         question.answered = true
       }
@@ -672,7 +720,7 @@ async function markAsAnswered(questionId) {
       })
 
       // 刷新问题列表以确保数据同步
-      await refreshQuestions()
+      await refreshComments()
     } else {
       ElMessage.error(response.data?.message || '标记失败，请重试')
     }
@@ -680,13 +728,53 @@ async function markAsAnswered(questionId) {
     console.error('标记已解答失败:', error)
     ElMessage.error('网络错误，请检查连接后重试')
   } finally {
-    markingAnswered.value = null
+    markingAnsweredComment.value = null
   }
 }
 
-// 获取空状态文本
-function getEmptyStateText() {
-  switch (questionFilter.value) {
+// 标记评论区问题已解答
+async function markAsAnsweredComment(questionId) {
+  // 防止重复点击
+  if (markingAnsweredComment.value === questionId) {
+    return
+  }
+
+  markingAnsweredComment.value = questionId
+
+  try {
+    // 调用API标记已解答
+    const response = await markQuestionAnswered(questionId)
+
+    if (response.data && response.data.success) {
+      // 立即更新本地状态，提供即时反馈
+      const question = commentData.value.questions.find(q => q.id === questionId)
+      if (question) {
+        question.answered = true
+      }
+
+      ElMessage({
+        message: '问题已标记为已解答',
+        type: 'success',
+        duration: 2000,
+        showClose: true
+      })
+
+      // 刷新问题列表以确保数据同步
+      await refreshComments()
+    } else {
+      ElMessage.error(response.data?.message || '标记失败，请重试')
+    }
+  } catch (error) {
+    console.error('标记已解答失败:', error)
+    ElMessage.error('网络错误，请检查连接后重试')
+  } finally {
+    markingAnsweredComment.value = null
+  }
+}
+
+// 获取评论区空状态文本
+function getCommentEmptyStateText() {
+  switch (commentFilter.value) {
     case 'unanswered':
       return '暂无待解答的问题'
     case 'answered':
@@ -711,31 +799,6 @@ function formatTimeForDisplay(timeString) {
     return timeString
   }
 }
-
-// 单独刷新问题列表
-async function refreshQuestions() {
-  try {
-    const response = await getQuestions(route.params.id, {
-      status: questionFilter.value === 'all' ? 'all' : questionFilter.value,
-      page: 1,
-      size: 100
-    })
-
-    if (response.data && response.data.success) {
-      const questions = response.data.data.questions || []
-      feedbackData.value.questions = questions.map(q => ({
-        id: q.id,
-        content: q.content,
-        time: formatTimeForDisplay(q.time),
-        anonymous: q.anonymous,
-        answered: q.answered
-      }))
-    }
-  } catch (error) {
-    console.error('刷新问题列表失败:', error)
-  }
-}
-
 
 
 const isRecording = ref(false)
@@ -1463,6 +1526,54 @@ const getTestStatusClass = (status) => {
 
 
 
+/* 评论区弹窗样式 */
+.comment-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  max-width: 90vw;
+  margin: 5vh auto;
+}
+
+.comment-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 20px;
+}
+
+.comment-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+}
+
+.comment-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.comment-content {
+  padding: 20px;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comment-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.comment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .feedback-content {
@@ -1473,9 +1584,14 @@ const getTestStatusClass = (status) => {
     grid-template-columns: 1fr;
   }
 
-  .questions-header {
+  .comment-content {
+    padding: 16px;
+  }
+
+  .comment-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
   }
 
   .filter-buttons {
@@ -1695,3 +1811,4 @@ const getTestStatusClass = (status) => {
   color: #409eff;
 }
 </style>
+
