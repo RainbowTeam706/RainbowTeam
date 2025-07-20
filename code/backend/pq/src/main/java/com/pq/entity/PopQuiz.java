@@ -12,12 +12,17 @@ import java.util.Date;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("activity_member")
-public class ActivityMember {
+@TableName("popquiz")
+public class PopQuiz {
     @TableId(value = "id", type = IdType.AUTO)
-    private int id;
-    private int activityId;
-    private int userId;
-    private String nickname;
-    private Date joinTime;
-}
+    private Integer id;
+
+    private Integer activityId;
+
+    private Date startTime;
+
+    private Date endTime;
+
+    private Integer status;
+
+} 

@@ -7,17 +7,21 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
-import java.util.Date;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("activity_member")
-public class ActivityMember {
+@TableName("question_bank")
+public class QuestionBank {
     @TableId(value = "id", type = IdType.AUTO)
-    private int id;
-    private int activityId;
-    private int userId;
-    private String nickname;
-    private Date joinTime;
-}
+    private Integer id;
+
+    private Integer popQuizId;
+
+    private String content;
+
+    private String options;
+
+    private String answer;
+
+} 

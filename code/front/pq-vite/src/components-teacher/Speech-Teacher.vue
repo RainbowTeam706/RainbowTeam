@@ -178,50 +178,261 @@
         <span>加载中...</span>
       </div>
     </el-dialog>
-    
-    <!-- 底部导航栏 -->
-    <div class="bottom-nav-student">
-      <div
-        class="nav-item"
-        :class="{ active: activeTab === 'test' }"
-        @click="showTestList"
-      >
-        <el-icon><Document /></el-icon>
-        <span>测试列表</span>
+
+    <!-- 反馈弹窗 -->
+    <el-dialog
+      v-model="feedbackDialogVisible"
+      title="💬 学生反馈"
+      width="90%"
+      :close-on-click-modal="false"
+      class="feedback-dialog"
+    >
+      <div class="feedback-content">
+        <div class="feedback-header">
+          <span class="feedback-title">实时反馈统计</span>
+          <el-button
+            type="primary"
+            size="small"
+            @click="refreshFeedback"
+            :loading="loadingFeedback"
+          >
+            刷新
+          </el-button>
+        </div>
+
+        <div class="feedback-body">
+          <!-- 实时反馈统计 -->
+          <div class="feedback-stats">
+            <!-- 节奏反馈 -->
+            <div class="feedback-card">
+              <h4 class="card-title">
+                <el-icon><Loading /></el-icon>
+                课堂节奏
+              </h4>
+              <div class="feedback-chart">
+                <div class="chart-item">
+                  <span class="chart-label">太快</span>
+                  <div class="chart-bar">
+                    <div class="chart-fill fast" :style="{ width: getFeedbackPercentage('pace', 'fast') + '%' }"></div>
+                  </div>
+                  <span class="chart-value">{{ feedbackData.pace.fast }}人</span>
+                </div>
+                <div class="chart-item">
+                  <span class="chart-label">正好</span>
+                  <div class="chart-bar">
+                    <div class="chart-fill normal" :style="{ width: getFeedbackPercentage('pace', 'normal') + '%' }"></div>
+                  </div>
+                  <span class="chart-value">{{ feedbackData.pace.normal }}人</span>
+                </div>
+                <div class="chart-item">
+                  <span class="chart-label">太慢</span>
+                  <div class="chart-bar">
+                    <div class="chart-fill slow" :style="{ width: getFeedbackPercentage('pace', 'slow') + '%' }"></div>
+                  </div>
+                  <span class="chart-value">{{ feedbackData.pace.slow }}人</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 难度反馈 -->
+            <div class="feedback-card">
+              <h4 class="card-title">
+                <el-icon><Loading /></el-icon>
+                内容难度
+              </h4>
+              <div class="feedback-chart">
+                <div class="chart-item">
+                  <span class="chart-label">太难</span>
+                  <div class="chart-bar">
+                    <div class="chart-fill hard" :style="{ width: getFeedbackPercentage('difficulty', 'hard') + '%' }"></div>
+                  </div>
+                  <span class="chart-value">{{ feedbackData.difficulty.hard }}人</span>
+                </div>
+                <div class="chart-item">
+                  <span class="chart-label">适中</span>
+                  <div class="chart-bar">
+                    <div class="chart-fill normal" :style="{ width: getFeedbackPercentage('difficulty', 'normal') + '%' }"></div>
+                  </div>
+                  <span class="chart-value">{{ feedbackData.difficulty.normal }}人</span>
+                </div>
+                <div class="chart-item">
+                  <span class="chart-label">太易</span>
+                  <div class="chart-bar">
+                    <div class="chart-fill easy" :style="{ width: getFeedbackPercentage('difficulty', 'easy') + '%' }"></div>
+                  </div>
+                  <span class="chart-value">{{ feedbackData.difficulty.easy }}人</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 理解程度 -->
+            <div class="feedback-card">
+              <h4 class="card-title">
+                <el-icon><Loading /></el-icon>
+                理解程度
+              </h4>
+              <div class="feedback-chart">
+                <div class="chart-item">
+                  <span class="chart-label">清楚</span>
+                  <div class="chart-bar">
+                    <div class="chart-fill clear" :style="{ width: getFeedbackPercentage('understanding', 'clear') + '%' }"></div>
+                  </div>
+                  <span class="chart-value">{{ feedbackData.understanding.clear }}人</span>
+                </div>
+                <div class="chart-item">
+                  <span class="chart-label">困惑</span>
+                  <div class="chart-bar">
+                    <div class="chart-fill confused" :style="{ width: getFeedbackPercentage('understanding', 'confused') + '%' }"></div>
+                  </div>
+                  <span class="chart-value">{{ feedbackData.understanding.confused }}人</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 学生提问区域 -->
+          <div class="questions-section">
+            <div class="questions-header">
+              <h4 class="questions-title">
+                <el-icon><ChatDotRound /></el-icon>
+                学生提问
+                <el-badge :value="unansweredCount" class="question-badge" v-if="unansweredCount > 0" />
+              </h4>
+
+              <!-- 筛选按钮 -->
+              <div class="filter-buttons">
+                <el-button
+                  :type="questionFilter === 'all' ? 'primary' : ''"
+                  size="small"
+                  @click="questionFilter = 'all'"
+                >
+                  全部 ({{ feedbackData.questions.length }})
+                </el-button>
+                <el-button
+                  :type="questionFilter === 'unanswered' ? 'primary' : ''"
+                  size="small"
+                  @click="questionFilter = 'unanswered'"
+                >
+                  未解答 ({{ unansweredCount }})
+                </el-button>
+                <el-button
+                  :type="questionFilter === 'answered' ? 'primary' : ''"
+                  size="small"
+                  @click="questionFilter = 'answered'"
+                >
+                  已解答 ({{ answeredCount }})
+                </el-button>
+              </div>
+            </div>
+
+            <div class="questions-list">
+              <div
+                v-for="question in filteredQuestions"
+                :key="question.id"
+                class="question-item"
+                :class="{
+                  'answered': question.answered,
+                  'unanswered': !question.answered
+                }"
+              >
+                <div class="question-header">
+                  <span class="question-time">{{ question.time }}</span>
+                  <div class="question-tags">
+                    <el-tag v-if="question.anonymous" size="small" type="info">匿名</el-tag>
+                    <el-tag v-if="question.answered" size="small" type="success">
+                      <el-icon><Check /></el-icon>
+                      已解答
+                    </el-tag>
+                    <el-tag v-if="!question.answered" size="small" type="warning">
+                      <el-icon><QuestionFilled /></el-icon>
+                      待解答
+                    </el-tag>
+                  </div>
+                </div>
+                <div class="question-content">{{ question.content }}</div>
+                <div class="question-actions" v-if="!question.answered">
+                  <el-button
+                    size="small"
+                    type="success"
+                    @click="markAsAnswered(question.id)"
+                    :loading="markingAnswered === question.id"
+                  >
+                    <el-icon><Check /></el-icon>
+                    标记为已解答
+                  </el-button>
+                </div>
+              </div>
+
+              <!-- 空状态 -->
+              <div v-if="filteredQuestions.length === 0" class="empty-state">
+                <el-icon size="48"><ChatDotRound /></el-icon>
+                <p>{{ getEmptyStateText() }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div
-        class="nav-item"
-        :class="{ active: activeTab === 'feedback' }"
-        @click="activeTab = 'feedback'"
-      >
-        <el-icon><ChatDotRound /></el-icon>
-        <span>反馈</span>
-      </div>
-      <div
-        class="nav-item"
-        :class="{ active: activeTab === 'comment' }"
-        @click="activeTab = 'comment'"
-      >
-        <el-icon><Comment /></el-icon>
-        <span>评论区</span>
+    </el-dialog>
+
+    <!-- 底部功能按钮组 -->
+    <div class="bottom-action-bar">
+      <div class="action-buttons-container">
+        <!-- 测试列表按钮 -->
+        <el-button
+          :type="activeTab === 'test' ? 'primary' : ''"
+          class="action-btn"
+          @click="showTestList"
+        >
+          <el-icon><Document /></el-icon>
+          <span>测试列表</span>
+        </el-button>
+
+        <!-- 反馈按钮 -->
+        <el-button
+          :type="activeTab === 'feedback' ? 'primary' : ''"
+          class="action-btn"
+          @click="goToFeedback"
+        >
+          <el-icon><ChatDotRound /></el-icon>
+          <span>反馈</span>
+        </el-button>
+
+        <!-- 评论区按钮 -->
+        <el-button
+          :type="activeTab === 'comment' ? 'primary' : ''"
+          class="action-btn"
+          @click="showComment"
+        >
+          <el-icon><Comment /></el-icon>
+          <span>评论区</span>
+        </el-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick } from "vue";
+import { ref, nextTick, watch } from "vue";
 import {
   ArrowLeft,
   Document,
   ChatDotRound,
   Comment,
-  Edit,
+  CircleCheck,
+  CircleClose,
+  Timer,
+  Check,
+  QuestionFilled,
   Loading,
 } from "@element-plus/icons-vue";
 import { useRoute } from 'vue-router'
 import { useActivityStore } from '../stores/activity'
 import { computed } from 'vue'
+import {
+  getFeedbackStats,
+  getQuestions,
+  markQuestionAnswered
+} from '../api/feedback'
 //文本提交相关
 import * as pdfjsLib from "pdfjs-dist"
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.js"
@@ -287,11 +498,243 @@ const testListDialogVisible = ref(false) // 测试列表弹窗
 const testListData = ref([]) // 测试列表数据
 const loadingTestList = ref(false) // 加载状态
 
+// 反馈相关状态
+const feedbackDialogVisible = ref(false) // 反馈弹窗
+const loadingFeedback = ref(false) // 加载状态
+const questionFilter = ref('all') // 问题筛选
+const markingAnswered = ref(null) // 正在标记为已解答的问题ID
+
+// 反馈数据
+const feedbackData = ref({
+  pace: { fast: 12, normal: 25, slow: 3 },
+  difficulty: { hard: 8, normal: 28, easy: 4 },
+  understanding: { clear: 32, confused: 8 },
+  questions: [
+    {
+      id: 1,
+      content: "这个概念能再解释一下吗？PPT第3页的内容有点难理解。",
+      time: "10:30",
+      anonymous: true,
+      answered: false
+    },
+    {
+      id: 2,
+      content: "PPT第5页的公式推导过程能详细说明一下吗？",
+      time: "10:25",
+      anonymous: false,
+      answered: false
+    },
+    {
+      id: 3,
+      content: "能举个具体的实际应用例子吗？",
+      time: "10:20",
+      anonymous: true,
+      answered: true
+    },
+    {
+      id: 4,
+      content: "这个理论在实际工作中如何应用？",
+      time: "10:15",
+      anonymous: false,
+      answered: false
+    }
+  ]
+})
+
 //查询活动信息
 const route = useRoute()
 const activityStore = useActivityStore()
 
 const activity = computed(() => activityStore.getActivityById(route.params.id) || {})
+
+// 反馈相关计算属性
+const filteredQuestions = computed(() => {
+  switch (questionFilter.value) {
+    case 'unanswered':
+      return feedbackData.value.questions.filter(q => !q.answered)
+    case 'answered':
+      return feedbackData.value.questions.filter(q => q.answered)
+    default:
+      return feedbackData.value.questions
+  }
+})
+
+const unansweredCount = computed(() =>
+  feedbackData.value.questions.filter(q => !q.answered).length
+)
+
+const answeredCount = computed(() =>
+  feedbackData.value.questions.filter(q => q.answered).length
+)
+
+// 打开反馈弹窗
+async function goToFeedback() {
+  activeTab.value = 'feedback' // 设置激活状态
+  feedbackDialogVisible.value = true
+  await refreshFeedback()
+}
+
+// 切换到评论区
+function showComment() {
+  activeTab.value = 'comment'
+}
+
+// 监听测试列表弹窗关闭，重置按钮状态
+watch(testListDialogVisible, (newVal) => {
+  if (!newVal && activeTab.value === 'test') {
+    // 弹窗关闭时，如果当前是测试列表状态，则重置为默认状态
+    activeTab.value = ''
+  }
+})
+
+// 监听反馈弹窗关闭，重置按钮状态
+watch(feedbackDialogVisible, (newVal) => {
+  if (!newVal && activeTab.value === 'feedback') {
+    // 弹窗关闭时，如果当前是反馈状态，则重置为默认状态
+    activeTab.value = ''
+  }
+})
+
+// 反馈相关方法
+// 计算反馈百分比
+function getFeedbackPercentage(category, type) {
+  const data = feedbackData.value[category]
+  const total = Object.values(data).reduce((sum, count) => sum + count, 0)
+  return total > 0 ? Math.round((data[type] / total) * 100) : 0
+}
+
+// 刷新反馈数据
+async function refreshFeedback() {
+  loadingFeedback.value = true
+  try {
+    // 并行获取反馈统计和问题列表
+    const [statsResponse, questionsResponse] = await Promise.all([
+      getFeedbackStats(route.params.id),
+      getQuestions(route.params.id, { status: 'all', page: 1, size: 100 })
+    ])
+
+    // 更新反馈统计数据
+    if (statsResponse.data && statsResponse.data.success) {
+      const stats = statsResponse.data.data
+      feedbackData.value.pace = stats.pace || { fast: 0, normal: 0, slow: 0 }
+      feedbackData.value.difficulty = stats.difficulty || { hard: 0, normal: 0, easy: 0 }
+      feedbackData.value.understanding = stats.understanding || { clear: 0, confused: 0 }
+    }
+
+    // 更新问题列表
+    if (questionsResponse.data && questionsResponse.data.success) {
+      const questions = questionsResponse.data.data.questions || []
+      feedbackData.value.questions = questions.map(q => ({
+        id: q.id,
+        content: q.content,
+        time: formatTimeForDisplay(q.time),
+        anonymous: q.anonymous,
+        answered: q.answered
+      }))
+    }
+
+    ElMessage.success('反馈数据已刷新')
+  } catch (error) {
+    console.error('刷新反馈数据失败:', error)
+    ElMessage.error('刷新失败，请稍后重试')
+  } finally {
+    loadingFeedback.value = false
+  }
+}
+
+
+
+// 标记问题已解答
+async function markAsAnswered(questionId) {
+  // 防止重复点击
+  if (markingAnswered.value === questionId) {
+    return
+  }
+
+  markingAnswered.value = questionId
+
+  try {
+    // 调用API标记已解答
+    const response = await markQuestionAnswered(questionId)
+
+    if (response.data && response.data.success) {
+      // 立即更新本地状态，提供即时反馈
+      const question = feedbackData.value.questions.find(q => q.id === questionId)
+      if (question) {
+        question.answered = true
+      }
+
+      ElMessage({
+        message: '问题已标记为已解答',
+        type: 'success',
+        duration: 2000,
+        showClose: true
+      })
+
+      // 刷新问题列表以确保数据同步
+      await refreshQuestions()
+    } else {
+      ElMessage.error(response.data?.message || '标记失败，请重试')
+    }
+  } catch (error) {
+    console.error('标记已解答失败:', error)
+    ElMessage.error('网络错误，请检查连接后重试')
+  } finally {
+    markingAnswered.value = null
+  }
+}
+
+// 获取空状态文本
+function getEmptyStateText() {
+  switch (questionFilter.value) {
+    case 'unanswered':
+      return '暂无待解答的问题'
+    case 'answered':
+      return '暂无已解答的问题'
+    default:
+      return '暂无学生提问'
+  }
+}
+
+// 格式化时间显示
+function formatTimeForDisplay(timeString) {
+  if (!timeString) return ''
+
+  try {
+    const date = new Date(timeString)
+    return date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch (error) {
+    console.error('时间格式化失败:', error)
+    return timeString
+  }
+}
+
+// 单独刷新问题列表
+async function refreshQuestions() {
+  try {
+    const response = await getQuestions(route.params.id, {
+      status: questionFilter.value === 'all' ? 'all' : questionFilter.value,
+      page: 1,
+      size: 100
+    })
+
+    if (response.data && response.data.success) {
+      const questions = response.data.data.questions || []
+      feedbackData.value.questions = questions.map(q => ({
+        id: q.id,
+        content: q.content,
+        time: formatTimeForDisplay(q.time),
+        anonymous: q.anonymous,
+        answered: q.answered
+      }))
+    }
+  } catch (error) {
+    console.error('刷新问题列表失败:', error)
+  }
+}
 
 
 
@@ -472,6 +915,7 @@ function formatDate(dateStr) {
 
 // 测试列表相关函数
 const showTestList = async () => {
+  activeTab.value = 'test' // 设置激活状态
   testListDialogVisible.value = true
   await refreshTestList()
 }
@@ -544,6 +988,7 @@ const getTestStatusClass = (status) => {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  padding-bottom: 90px; /* 为新的按钮组预留空间 */
 }
 .top-nav {
   display: flex;
@@ -667,35 +1112,380 @@ const getTestStatusClass = (status) => {
   font-weight: bold;
   color: #222;
 }
-.bottom-nav-student {
-  background: white;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  padding: 8px 0;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+/* 底部功能按钮组样式 */
+.bottom-action-bar {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-top: 1px solid #e9ecef;
+  padding: 16px 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 10;
+  backdrop-filter: blur(10px);
 }
-.bottom-nav-student .nav-item {
+
+.action-buttons-container {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  max-width: 480px; /* 减少最大宽度以适应三个按钮 */
+  margin: 0 auto;
+}
+
+.action-btn {
   flex: 1;
+  min-height: 52px; /* 稍微增加高度 */
+  border-radius: 14px; /* 增加圆角 */
+  font-size: 0.9rem;
+  font-weight: 500;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  padding: 10px 16px; /* 增加内边距 */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12); /* 增强阴影 */
+}
+
+.action-btn:not(.el-button--primary) {
+  background: white;
+  color: #606266;
+  border-color: #dcdfe6;
+}
+
+.action-btn:not(.el-button--primary):hover {
+  background: #f5f7fa;
+  border-color: #409eff;
+  color: #409eff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.2);
+}
+
+.action-btn.el-button--primary {
+  background: linear-gradient(135deg, #409eff 0%, #3a8ee6 100%);
+  border-color: #409eff;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.3);
+}
+
+.action-btn.el-button--primary:hover {
+  background: linear-gradient(135deg, #3a8ee6 0%, #337ecc 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.4);
+}
+
+.action-btn .el-icon {
+  font-size: 1.2rem;
+}
+
+.action-btn span {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .bottom-action-bar {
+    padding: 12px 16px;
+  }
+
+  .action-buttons-container {
+    gap: 12px; /* 保持较好的间距 */
+    max-width: 360px; /* 适配移动端宽度 */
+  }
+
+  .action-btn {
+    min-height: 48px; /* 保持足够的点击区域 */
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .action-btn .el-icon {
+    font-size: 1.1rem;
+  }
+
+  .action-btn span {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .bottom-action-bar {
+    padding: 10px 12px;
+  }
+
+  .action-buttons-container {
+    gap: 8px; /* 保持合适的间距 */
+    max-width: 300px; /* 进一步缩小宽度 */
+  }
+
+  .action-btn {
+    min-height: 44px; /* 保持足够的点击区域 */
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    border-radius: 12px; /* 稍微减少圆角 */
+  }
+
+  .action-btn .el-icon {
+    font-size: 1rem;
+  }
+
+  .action-btn span {
+    font-size: 0.7rem;
+  }
+}
+
+/* 反馈弹窗样式 */
+.feedback-dialog .el-dialog__body {
+  padding: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.feedback-content {
+  padding: 20px;
+}
+
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.feedback-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #303133;
+}
+
+.feedback-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.feedback-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.feedback-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #ebeef5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s;
+}
+
+.feedback-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chart-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chart-label {
+  min-width: 40px;
+  font-size: 0.9rem;
+  color: #606266;
+  font-weight: 500;
+}
+
+.chart-bar {
+  flex: 1;
+  height: 20px;
+  background: #f5f7fa;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+.chart-fill.fast { background: linear-gradient(90deg, #ff6b6b, #ee5a52); }
+.chart-fill.normal { background: linear-gradient(90deg, #51cf66, #40c057); }
+.chart-fill.slow { background: linear-gradient(90deg, #ffd43b, #fab005); }
+.chart-fill.hard { background: linear-gradient(90deg, #ff6b6b, #ee5a52); }
+.chart-fill.easy { background: linear-gradient(90deg, #339af0, #228be6); }
+.chart-fill.clear { background: linear-gradient(90deg, #51cf66, #40c057); }
+.chart-fill.confused { background: linear-gradient(90deg, #ff6b6b, #ee5a52); }
+
+.chart-value {
+  min-width: 40px;
+  font-size: 0.9rem;
+  color: #303133;
+  font-weight: 600;
+  text-align: right;
+}
+
+.questions-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #ebeef5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.questions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.questions-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.question-badge {
+  margin-left: 8px;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.question-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  border-left: 4px solid #409eff;
+  transition: all 0.3s;
+}
+
+.question-item:hover {
+  background: #f1f3f4;
+}
+
+.question-item.answered {
+  border-left-color: #67c23a;
+  background: #f0f9ff;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.question-time {
+  font-size: 0.8rem;
+  color: #909399;
+  font-weight: 500;
+}
+
+.question-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.question-content {
+  font-size: 0.9rem;
+  color: #303133;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.question-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start; /* 左对齐，适应单个按钮 */
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
   color: #909399;
 }
-.bottom-nav-student .nav-item.active {
-  color: #409eff;
+
+.empty-state .el-icon {
+  margin-bottom: 12px;
+  color: #c0c4cc;
 }
-.bottom-nav-student .nav-item span {
-  font-size: 0.8rem;
-  font-weight: 500;
+
+.empty-state p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .feedback-content {
+    padding: 16px;
+  }
+
+  .feedback-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .questions-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-buttons {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .question-actions {
+    justify-content: flex-start;
+  }
 }
 .small-invite {
   font-size: 0.85rem;

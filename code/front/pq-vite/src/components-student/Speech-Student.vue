@@ -32,6 +32,7 @@
       </div>
     </el-scrollbar>
     
+    
     <!-- 底部导航栏 -->
     <div class="bottom-nav-student">
       <div class="nav-item" :class="{ active: activeTab === 'test' }" @click="showTestList">
@@ -303,7 +304,7 @@ import { ElMessage } from 'element-plus'
 import { useUserInfoStore } from '../stores/userInfo.js'
 import { useActivityStore } from '../stores/activity.js'
 import { useRoute } from 'vue-router'
-import { submit, ExamList,ShowTestService } from '../api/activity.js'
+import { submit, ExamList, ShowTestService } from '../api/activity.js'
 
 const userInfoStore = useUserInfoStore()
 const activityStore = useActivityStore()
@@ -743,7 +744,7 @@ const getTestStatusText = (status) => {
   switch (status) {
     case 0: return '进行中'
     case 1: return '已结束'
-    
+    default: return '未知'
   }
 }
 
@@ -863,6 +864,7 @@ function formatDate(dateStr) {
   position: relative;
 }
 
+
 .top-nav {
   display: flex;
   align-items: center;
@@ -872,10 +874,12 @@ function formatDate(dateStr) {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+
 .back-btn {
   color: white;
   margin-right: 12px;
 }
+
 
 .nav-title {
   flex: 1;
@@ -888,11 +892,13 @@ function formatDate(dateStr) {
   gap: 12px;
 }
 
+
 .status-tag {
   font-size: 0.8rem;
   padding: 4px 8px;
   border-radius: 12px;
 }
+
 
 .activity-content-brief {
   background-color: #bbbbbb;
@@ -905,6 +911,7 @@ function formatDate(dateStr) {
   text-overflow: ellipsis;
 }
 
+
 .main-content {
   flex: 1;
   display: flex;
@@ -912,6 +919,7 @@ function formatDate(dateStr) {
   gap: 18px;
   padding: 0 20px;
 }
+
 
 .ppt-preview {
   background: #fff;
@@ -926,11 +934,13 @@ function formatDate(dateStr) {
   justify-content: center;
 }
 
+
 .ppt-iframe {
   width: 100%;
   height: 360px;
   border: none;
 }
+
 
 .ppt-placeholder {
   color: #bbb;
@@ -938,6 +948,7 @@ function formatDate(dateStr) {
   text-align: center;
   padding: 40px 0;
 }
+
 
 .detail-content {
   background: #fff;
@@ -1001,6 +1012,7 @@ function formatDate(dateStr) {
   margin: 0;
 }
 
+
 .activity-detail-list li {
   text-align: left;
   font-size: 0.8rem;
@@ -1011,10 +1023,12 @@ function formatDate(dateStr) {
   white-space: pre-line;
 }
 
+
 .activity-detail-list li .item-label {
   font-weight: bold;
   color: #222;
 }
+
 
 .bottom-nav-student {
   background: white;
@@ -1029,6 +1043,7 @@ function formatDate(dateStr) {
   z-index: 10;
 }
 
+
 .bottom-nav-student .nav-item {
   flex: 1;
   display: flex;
@@ -1041,13 +1056,610 @@ function formatDate(dateStr) {
   color: #909399;
 }
 
+
 .bottom-nav-student .nav-item.active {
   color: #409eff;
 }
 
+
 .bottom-nav-student .nav-item span {
   font-size: 0.8rem;
   font-weight: 500;
+}
+
+/* WebSocket 状态指示器 */
+.ws-status {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.ws-status.connected {
+  background: rgba(103, 194, 58, 0.9);
+  color: white;
+}
+
+.ws-status.connecting {
+  background: rgba(230, 162, 60, 0.9);
+  color: white;
+}
+
+.ws-status.disconnected {
+  background: rgba(245, 108, 108, 0.9);
+  color: white;
+}
+
+/* 答题弹窗样式 */
+.quiz-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  max-width: 90vw;
+  margin: 5vh auto;
+}
+
+.quiz-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 20px;
+}
+
+.quiz-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+}
+
+.quiz-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.quiz-content {
+  padding: 20px;
+}
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.quiz-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quiz-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.quiz-count {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.timer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border-radius: 20px;
+  font-weight: 600;
+  color: #409eff;
+}
+
+.timer.warning {
+  background: #fef2f2;
+  color: #f56c6c;
+}
+
+.question-container {
+  margin-bottom: 24px;
+}
+
+.question-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.option-item:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.option-item.selected {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+}
+
+.option-label {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9ecef;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.option-item.selected .option-label {
+  background: white;
+  color: #667eea;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.quiz-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.quiz-actions .el-button {
+  flex: 1;
+  height: 44px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* 结果弹窗样式 */
+.result-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  max-width: 80vw;
+  margin: 10vh auto;
+}
+
+.result-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.result-icon {
+  margin-bottom: 16px;
+}
+
+.result-text h3 {
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+
+.result-text p {
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.result-actions {
+  margin-top: 24px;
+}
+
+.result-actions .el-button {
+  width: 120px;
+  height: 40px;
+  border-radius: 8px;
+}
+
+/* 测试列表弹窗样式 */
+.test-list-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  max-width: 90vw;
+  margin: 5vh auto;
+}
+
+.test-list-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 20px;
+}
+
+.test-list-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+}
+
+.test-list-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.test-list-content {
+  padding: 20px;
+}
+
+.test-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.test-list-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.test-list-body {
+  min-height: 200px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-state p {
+  margin-top: 12px;
+  font-size: 0.95rem;
+}
+
+.test-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.test-item {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+  cursor: pointer; /* 添加鼠标指针 */
+}
+
+.test-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px); /* 添加悬停效果 */
+}
+
+.test-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.test-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.test-status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-active {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-unknown {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.test-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.test-info {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.info-label {
+  color: #666;
+  min-width: 80px;
+  font-weight: 500;
+}
+
+.info-value {
+  color: #333;
+  flex: 1;
+}
+
+/* 测试结果详情弹窗样式 */
+.test-result-dialog :deep(.el-dialog) {
+  border-radius: 16px;
+  max-width: 95vw;
+  margin: 5vh auto;
+}
+
+.test-result-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 20px;
+}
+
+.test-result-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+}
+
+.test-result-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.test-result-content {
+  padding: 20px;
+}
+
+.result-summary {
+  display: flex;
+  justify-content: space-around;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 15px 0;
+  margin-bottom: 20px;
+  border: 1px solid #e9ecef;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.summary-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.summary-label {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.question-result-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #eee;
+}
+
+.question-number {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #409eff;
+}
+
+.question-status {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.question-status.correct {
+  background: #e1f3d8;
+  color: #67c23a;
+}
+
+.question-status.incorrect {
+  background: #fde2e2;
+  color: #f56c6c;
+}
+
+.question-content {
+  margin-bottom: 15px;
+}
+
+.question-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  position: relative;
+}
+
+.option-result-item.student-selected {
+  border-color: #409eff;
+  background: #e1f3d8;
+  color: #67c23a;
+}
+
+.option-result-item.correct-answer {
+  border-color: #67c23a;
+  background: #e1f3d8;
+  color: #67c23a;
+}
+
+.option-label {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9ecef;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.option-indicator {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  gap: 4px;
+}
+
+.correct-icon {
+  color: #67c23a;
+  font-size: 0.9rem;
+}
+
+.incorrect-icon {
+  color: #f56c6c;
+  font-size: 0.9rem;
+}
+
+.answer-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px dashed #eee;
+}
+
+.answer-label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.student-answer {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.student-answer.correct {
+  color: #67c23a;
+}
+
+.student-answer.incorrect {
+  color: #f56c6c;
+}
+
+.correct-answer {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #67c23a;
+}
+
+.loading-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.loading-result .is-loading {
+  font-size: 2rem;
+  color: #409eff;
+  margin-bottom: 10px;
+}
+
+.loading-result span {
+  font-size: 0.9rem;
+  color: #909399;
 }
 
 /* WebSocket 状态指示器 */
