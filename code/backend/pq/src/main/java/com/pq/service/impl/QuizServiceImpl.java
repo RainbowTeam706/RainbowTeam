@@ -32,9 +32,12 @@ public class QuizServiceImpl implements IQuizService {
     @Resource
     private IActivityMemberService activityMemberService;
 
+    @Resource
+    private IAIQuestionService aiQuestionService;
+
     @Override
     @Transactional
-    public void createAndSendQuiz(Integer activityId, Integer questionCount,int lastTime, String text) {
+    public void createAndSendQuiz(Integer activityId, Integer questionCount, int lastTime, String text) {
 
         // 1. 创建 PopQuiz
         Date startTime = new Date();
@@ -46,18 +49,18 @@ public class QuizServiceImpl implements IQuizService {
                 .setStatus(0);
         popQuizService.save(popQuiz);
 
-        // 2. 静态生成题目并插入 question_bank
-        List<QuestionBank> questionList = new ArrayList<>();
-        Random random = new Random();
-        for (int i = 1; i <= 10; i++) {
-            char randomAnswer = (char) ('A' + random.nextInt(4));
-            QuestionBank q = new QuestionBank()
-                    .setPopQuizId(popQuiz.getId())
-                    .setContent("题目"  + "：" + text + "谁最聪明")
-                    .setOptions("[\"喜羊羊\",\"刘健顺\",\"郭钰\",\"李正鹏\"]")
-                    .setAnswer(String.valueOf(randomAnswer));
-            questionList.add(q);
+        // 2. 使用AI生成题目
+        List<QuestionBank> questionList;
+        try {
+            System.out.println("开始使用AI生成题目 - 主题: " + text + ", 数量: " + questionCount);
+            questionList = aiQuestionService.generateQuestions(text, questionCount, popQuiz.getId());
+            System.out.println("AI成功生成" + questionList.size() + "道题目");
+        } catch (Exception e) {
+            System.err.println("AI生成题目失败，使用备用方案: " + e.getMessage());
+            e.printStackTrace();
+            questionList = generateFallbackQuestions(text, questionCount, popQuiz.getId());
         }
+        
         questionBankService.saveBatch(questionList);
 
         // 3. 查询所有参与学生
@@ -70,7 +73,7 @@ public class QuizServiceImpl implements IQuizService {
             // 随机抽取题目
             List<QuestionBank> randomQuestions = new ArrayList<>(questionList);
             Collections.shuffle(randomQuestions);
-            List<QuestionBank> assigned = randomQuestions.subList(0, questionCount);
+            List<QuestionBank> assigned = randomQuestions.subList(0, Math.min(questionCount, randomQuestions.size()));
 
             // 组装题目id、options
             String questionIds = assigned.stream().map(q -> q.getId().toString()).collect(Collectors.joining(","));
@@ -104,7 +107,7 @@ public class QuizServiceImpl implements IQuizService {
             pushData.put("popQuizId", popQuiz.getId());
             pushData.put("text", text);
 
-            System.out.println("用户ID: " + userId + " 分配到的题目：");
+            System.out.println("用户ID: " + userId + " 分配到的AI生成题目：");
             System.out.println("时间限制: " + lastTime + "分钟 (" + (lastTime * 60) + "秒)");
             for (QuestionBank q : assigned) {
                 System.out.println("  题目ID: " + q.getId() + " 内容: " + q.getContent() + " 选项: " + q.getOptions());
@@ -112,6 +115,25 @@ public class QuizServiceImpl implements IQuizService {
             System.out.println("--------------------------------------------------");
             webSocketService.sendQuizToStudent(userId, pushData);
         }
+    }
+
+    /**
+     * 备用题目生成方法
+     */
+    private List<QuestionBank> generateFallbackQuestions(String text, int questionCount, Integer popQuizId) {
+        System.out.println("使用备用方案生成" + questionCount + "道题目");
+        List<QuestionBank> questionList = new ArrayList<>();
+        Random random = new Random();
+        for (int i = 1; i <= questionCount; i++) {
+            char randomAnswer = (char) ('A' + random.nextInt(4));
+            QuestionBank q = new QuestionBank()
+                    .setPopQuizId(popQuizId)
+                    .setContent("题目" + i + "：关于'" + text + "'的问题")
+                    .setOptions("[\"选项A\",\"选项B\",\"选项C\",\"选项D\"]")
+                    .setAnswer(String.valueOf(randomAnswer));
+            questionList.add(q);
+        }
+        return questionList;
     }
 
 
