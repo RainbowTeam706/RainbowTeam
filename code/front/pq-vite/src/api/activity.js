@@ -1,20 +1,20 @@
 import request from '../utils/request'
 
-// »ñÈ¡ÎÒ·¢ÆğµÄ»î¶¯
+// è·å–æˆ‘å‘èµ·çš„æ´»åŠ¨
 export function fetchCreatedActivities() {
   return request.get('/activity/listByMe')
 }
 
-// »ñÈ¡ÎÒ²ÎÓëµÄ»î¶¯
+// è·å–æˆ‘å‚ä¸çš„æ´»åŠ¨
 export function fetchJoinedActivities() {
   return request.get('/activity/listWithMe')
 }
 
-// ¼ÓÈë»î¶¯
+// åŠ å…¥æ´»åŠ¨
 export function joinActivity(inviteCode) {
   return request.post('/activity/add', { inviteCode })
 }
-//´´½¨»î¶¯
+//åˆ›å»ºæ´»åŠ¨
 export function createActivity(data) {
   return request({
     url: '/activity/create',
@@ -22,7 +22,7 @@ export function createActivity(data) {
     data
   })
 }
-//Ñİ½²ÖĞ·¢ËÍÌâÄ¿
+//æ¼”è®²ä¸­å‘é€é¢˜ç›®
 export function sendPopquiz({ activityId, questionCount, lastTime, text }) {
   return request.post('/quiz/popQuiz', null, {
     params: {
