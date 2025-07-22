@@ -1,0 +1,12 @@
+[19204] 18 Jun 22:09:29.478 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+[19204] 18 Jun 22:09:29.478 # Redis version=5.0.14.1, bits=64, commit=ec77f72d, modified=0, pid=19204, just started
+[19204] 18 Jun 22:09:29.478 # Configuration loaded
+[19204] 18 Jun 22:09:29.482 * Running mode=standalone, port=6379.
+[19204] 18 Jun 22:09:29.482 # Server initialized
+[19204] 18 Jun 22:09:29.482 * Ready to accept connections
+[23344] 18 Jun 22:09:57.470 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+[23344] 18 Jun 22:09:57.470 # Redis version=5.0.14.1, bits=64, commit=ec77f72d, modified=0, pid=23344, just started
+[23344] 18 Jun 22:09:57.470 # Configuration loaded
+[23344] 18 Jun 22:09:57.474 * Running mode=standalone, port=6379.
+[23344] 18 Jun 22:09:57.475 # Server initialized
+[23344] 18 Jun 22:09:57.476 * Ready to accept connections
