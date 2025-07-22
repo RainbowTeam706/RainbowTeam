@@ -17,10 +17,11 @@ public class QuizController {
     private IQuizService quizService;
 
     @PostMapping("/popQuiz")
-    public Result sendQuiz(@RequestParam Integer activityId,
-                           @RequestParam(defaultValue = "3") Integer questionCount,
-                           @RequestParam int lastTime,
-                           @RequestParam String text) {
+    public Result sendQuiz(@RequestBody Map<String, Object> requestBody) {
+        Integer activityId = (Integer) requestBody.get("activityId");
+        Integer questionCount = (Integer) requestBody.get("questionCount");
+        int lastTime = (int) requestBody.get("lastTime"); // 假设 lastTime 也在请求体中
+        String text = (String) requestBody.get("text");
         quizService.createAndSendQuiz(activityId, questionCount,lastTime,text);
         return Result.ok();
     }

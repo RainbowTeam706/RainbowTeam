@@ -53,7 +53,7 @@ public class QuizServiceImpl implements IQuizService {
         List<QuestionBank> questionList;
         try {
             System.out.println("开始使用AI生成题目 - 主题: " + text + ", 数量: " + questionCount);
-            questionList = aiQuestionService.generateQuestions(text, questionCount, popQuiz.getId());
+            questionList = aiQuestionService.generateQuestions(text, 5, popQuiz.getId());
             System.out.println("AI成功生成" + questionList.size() + "道题目");
         } catch (Exception e) {
             System.err.println("AI生成题目失败，使用备用方案: " + e.getMessage());
