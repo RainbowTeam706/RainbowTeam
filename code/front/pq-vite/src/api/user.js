@@ -1,36 +1,36 @@
-// ÒıÈë·â×°µÄaxiosÇëÇó¹¤¾ß
+// å¼•å…¥å°è£…çš„axiosè¯·æ±‚å·¥å…·
 import request from '../utils/request'
 
-// µÇÂ¼APIº¯Êı£¬½ÓÊÕÓÃ»§ÃûºÍÃÜÂë×÷Îª²ÎÊı
+// ç™»å½•APIå‡½æ•°ï¼Œæ¥æ”¶ç”¨æˆ·åå’Œå¯†ç ä½œä¸ºå‚æ•°
 export function login(username, password) {
-  // ·¢ËÍPOSTÇëÇóµ½ºó¶ËµÇÂ¼½Ó¿Ú£¬´«µİÓÃ»§ÃûºÍÃÜÂë
+  // å‘é€POSTè¯·æ±‚åˆ°åç«¯ç™»å½•æ¥å£ï¼Œä¼ é€’ç”¨æˆ·åå’Œå¯†ç 
   console.log(username,password)
   return request.post('/user/login', {
-    username, // ÓÃ»§Ãû
-    password  // ÃÜÂë
+    username, // ç”¨æˆ·å
+    password  // å¯†ç 
   })
 }
 
-// ×¢²áAPIº¯Êı£¬½ÓÊÕÓÃ»§ÃûºÍÃÜÂë×÷Îª²ÎÊı
+// ×¢ï¿½ï¿½APIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½
 export function register(username, password,nickname) {
-  // ·¢ËÍPOSTÇëÇóµ½ºó¶Ë×¢²á½Ó¿Ú£¬´«µİÓÃ»§ÃûºÍÃÜÂë
+  // ï¿½ï¿½ï¿½ï¿½POSTï¿½ï¿½ï¿½óµ½ºï¿½ï¿½×¢ï¿½ï¿½Ó¿Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   return request.post('/user/register', {
-    username, // ÓÃ»§Ãû
-    password,  // ÃÜÂë
-    nickname: username  // Ä¬ÈÏêÇ³Æ£ºÓÃ»§Ãû
+    username, // ï¿½Ã»ï¿½ï¿½ï¿½
+    password,  // ï¿½ï¿½ï¿½ï¿½
+    nickname: username  // Ä¬ï¿½ï¿½ï¿½Ç³Æ£ï¿½ï¿½Ã»ï¿½ï¿½ï¿½
   })
 }
 
-// ¸üĞÂÓÃ»§ĞÅÏ¢
+// ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½Ï¢
 export function updateUserInfo(username, nickname ,token) {
   return request.post('/user/update', {
-    username, // ÓÃ»§Ãû
-    nickname, // êÇ³Æ
+    username, // ï¿½Ã»ï¿½ï¿½ï¿½
+    nickname, // ï¿½Ç³ï¿½
     token
   })
 }
 
-// »ñÈ¡µ±Ç°ÓÃ»§ĞÅÏ¢
+// è·å–å½“å‰ç”¨æˆ·ä¿¡æ¯
 export function getUserInfo() {
   return request.get('/user/me')
 }

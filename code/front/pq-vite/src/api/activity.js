@@ -1,16 +1,16 @@
 import request from '../utils/request'
 
-// »ñÈ¡ÎÒ·¢ÆğµÄ»î¶¯
+// è·å–æˆ‘å‘èµ·çš„æ´»åŠ¨
 export function fetchCreatedActivities() {
   return request.get('/activity/listByMe')
 }
 
-// »ñÈ¡ÎÒ²ÎÓëµÄ»î¶¯
+// è·å–æˆ‘å‚ä¸çš„æ´»åŠ¨
 export function fetchJoinedActivities() {
   return request.get('/activity/listWithMe')
 }
 
-// ¼ÓÈë»î¶¯
+// ï¿½ï¿½ï¿½ï¿½î¶¯
 // export function joinActivity(inviteCode) {
 //   return request.post('/activity/add', {inviteCode} )
 // }
@@ -19,7 +19,7 @@ export function fetchJoinedActivities() {
   params.append('inviteCode', inviteCode);
   return request.post('/activity/add', params);
 }
-//´´½¨»î¶¯
+//åˆ›å»ºæ´»åŠ¨
 export function createActivity(data) {
   return request({
     url: '/activity/create',
@@ -27,7 +27,7 @@ export function createActivity(data) {
     data
   })
 }
-//Ñİ½²ÖĞ·¢ËÍÌâÄ¿
+//æ¼”è®²ä¸­å‘é€é¢˜ç›®
 export function sendPopquiz({ activityId, questionCount, lastTime, text }) {
   return request.post('/quiz/popQuiz', null, 
     {
@@ -35,7 +35,7 @@ export function sendPopquiz({ activityId, questionCount, lastTime, text }) {
       questionCount,
       lastTime,
       text
-    });//ÄîÑ©ÄÏÈÃ¸Ä£ºÈ¥µôparams²ÎÊı£¬Ö±½Ó´«µİ¶ÔÏó
+    });//ï¿½ï¿½Ñ©ï¿½ï¿½ï¿½Ã¸Ä£ï¿½È¥ï¿½ï¿½paramsï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó´ï¿½ï¿½İ¶ï¿½ï¿½ï¿½
 }
 
 export function submit(submitData) {
