@@ -17,8 +17,7 @@ export const useUserInfoStore = defineStore('user', {
       this.username = ''
       this.nickname = ''
     }
-  }
-},{
+  },
   persist: true
 })
 

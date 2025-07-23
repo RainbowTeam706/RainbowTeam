@@ -25,25 +25,25 @@ export function submitFeedback(activityId, feedbackData) {
     }
   })
 }
-// 获取学生提问列表
-export function getQuestions(activityId, params = {}) {
-  return request.get(`/feedback/questions/${activityId}`, { params })
-}
+// // 获取学生提问列表
+// export function getQuestions(activityId, params = {}) {
+//   return request.get(`/feedback/questions/${activityId}`, { params })
+// }
 
-// 标记问题已解答
-export function markQuestionAnswered(questionId) {
-  return request.patch(`/feedback/question/${questionId}/answered`, {
-    answeredTime: new Date().toISOString()
-  })
-}
+// // 标记问题已解答
+// export function markQuestionAnswered(questionId) {
+//   return request.patch(`/feedback/question/${questionId}/answered`, {
+//     answeredTime: new Date().toISOString()
+//   })
+// }
 
 
-// 学生提交问题
-export function submitQuestion(activityId, questionData) {
-  return request.post(`/feedback/question/${activityId}`, {
-    ...questionData,
-    submitTime: new Date().toISOString()
-  })
-}
+// // 学生提交问题
+// export function submitQuestion(activityId, questionData) {
+//   return request.post(`/feedback/question/${activityId}`, {
+//     ...questionData,
+//     submitTime: new Date().toISOString()
+//   })
+// }
 
 
