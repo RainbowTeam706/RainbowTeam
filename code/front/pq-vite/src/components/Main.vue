@@ -330,6 +330,7 @@ async function handleJoin() {
   }
   try {
     // 调用后端接口
+    console.log(userInfoStore.id)
     console.log(joinForm.code)
     const res = await joinActivity(joinForm.code);
     // 假设后端返回 { success: true, data: ... }
@@ -339,7 +340,7 @@ async function handleJoin() {
       await loadActivities();
       joinDialogVisible.value = false;
     } else {
-      ElMessage.error(res.data?.message || "加入活动失败！");
+      ElMessage.error(res.data.errorMsg);
     }
   } catch (e) {
     ElMessage.error("加入活动请求失败！");

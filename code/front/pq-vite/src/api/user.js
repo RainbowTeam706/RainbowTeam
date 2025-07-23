@@ -12,11 +12,21 @@ export function login(username, password) {
 }
 
 // 注册API函数，接收用户名和密码作为参数
-export function register(username, password) {
+export function register(username, password,nickname) {
   // 发送POST请求到后端注册接口，传递用户名和密码
   return request.post('/user/register', {
     username, // 用户名
-    password  // 密码
+    password,  // 密码
+    nickname: username  // 默认昵称：用户名
+  })
+}
+
+// 更新用户信息
+export function updateUserInfo(username, nickname ,token) {
+  return request.post('/user/update', {
+    username, // 用户名
+    nickname, // 昵称
+    token
   })
 }
 

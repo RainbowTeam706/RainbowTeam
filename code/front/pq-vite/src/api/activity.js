@@ -11,8 +11,13 @@ export function fetchJoinedActivities() {
 }
 
 // 加入活动
-export function joinActivity(inviteCode) {
-  return request.post('/activity/add', { inviteCode })
+// export function joinActivity(inviteCode) {
+//   return request.post('/activity/add', {inviteCode} )
+// }
+ export function joinActivity(inviteCode) {
+  const params = new URLSearchParams();
+  params.append('inviteCode', inviteCode);
+  return request.post('/activity/add', params);
 }
 //创建活动
 export function createActivity(data) {
@@ -24,14 +29,13 @@ export function createActivity(data) {
 }
 //演讲中发送题目
 export function sendPopquiz({ activityId, questionCount, lastTime, text }) {
-  return request.post('/quiz/popQuiz', null, {
-    params: {
+  return request.post('/quiz/popQuiz', null, 
+    {
       activityId,
       questionCount,
       lastTime,
       text
-    }
-  })
+    });//念雪南让改：去掉params参数，直接传递对象
 }
 
 export function submit(submitData) {

@@ -22,16 +22,40 @@
       <!-- 可扩展更多信息项 -->
     </div>
   </div>
+
+  <el-dialog v-model="editDialogVisible" title="编辑昵称" width="350px">
+  <el-form :model="editForm" label-width="60px">
+    <el-form-item label="昵称">
+      <el-input v-model="editForm.nickname" maxlength="20" show-word-limit />
+    </el-form-item>
+  </el-form>
+  <template #footer>
+    <el-button @click="editDialogVisible = false">取消</el-button>
+    <el-button type="primary" @click="submitEdit">保存</el-button>
+  </template>
+</el-dialog>
+
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getUserInfo } from '../api/user'
 import { ElAvatar, ElButton, ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+
+import { getToken } from '../stores/token' // 导入获取token的方法
+const token = getToken()
+import { updateUserInfo } from '../api/user'
 
 const user = ref(null)
 const loading = ref(true)
 const error = ref('')
+const router = useRouter()
+
+
+// 编辑资料相关
+const editDialogVisible = ref(false)
+const editForm = ref({ nickname: '' })
 
 onMounted(async () => {
   loading.value = true
@@ -51,11 +75,33 @@ onMounted(async () => {
 })
 
 function editProfile() {
-  ElMessage.info('编辑资料功能待开发')
+  editForm.value.nickname = user.value?.nickname || ''
+  editDialogVisible.value = true
 }
 function logout() {
-  ElMessage.info('退出登录功能待开发')
+  router.push('/login')
 }
+
+
+async function submitEdit() {
+  if (!editForm.value.nickname.trim()) {
+    ElMessage.error('昵称不能为空')
+    return
+  }
+  try {
+    const res = await updateUserInfo(user.value.username ,editForm.value.nickname,token)
+    if (res.data && res.data.success) {
+      ElMessage.success('修改成功')
+      user.value.nickname = editForm.value.nickname
+      editDialogVisible.value = false
+    } else {
+      ElMessage.error(res.data?.message || '修改失败')
+    }
+  } catch (e) {
+    ElMessage.error('修改失败，请检查网络')
+  }
+}
+
 </script>
 
 <style scoped>

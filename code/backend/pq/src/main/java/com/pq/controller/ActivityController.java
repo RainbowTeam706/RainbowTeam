@@ -64,9 +64,13 @@ public class ActivityController {
 
     @PostMapping("add")
     public Result addActivity(String inviteCode) {
+        System.out.println("======"+inviteCode);
         Activity activity = activityService.query().eq("inviteCode", inviteCode).one();
-        if (activity == null || activity.getEndTime().before(new Date())) {
+        if (activity == null ) {
             return Result.fail("无效的邀请码");
+        }
+        else if(activity.getEndTime().before(new Date())){
+            return Result.fail("此活动已经结束");
         }
         ActivityMember activityMember = new ActivityMember()
                 .setActivityId(activity.getId())
