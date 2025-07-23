@@ -15,8 +15,8 @@ public class FeedbackActivity {
     @TableId(value = "id", type = IdType.AUTO)
     private int id;
 
-    private int activityId; // 关联活动ID
-    private int userId; // 反馈学生ID
+    private int activityId; // 鍏宠仈娲诲姩ID
+    private int userId; // 鍙嶉瀛︾敓ID
     private int feedbackData_Pace; // 0fast, 1normal, 2slow
     private int feedbackData_Difficulty; // 0hard, 1normal, 2easy
     private int feedbackData_Understanding; // 0clear, 1confused

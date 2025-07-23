@@ -11,4 +11,6 @@ import javax.servlet.http.HttpSession;
 public interface IUserService extends IService<User> {
 
     Result login(User user);
+    Result register(User user);
+    Result updateNickname(String username, String nickname, String token);
 }

@@ -154,7 +154,7 @@ async function handleSubmit() {
       }
       try {
         const res = await register(form.username, form.password)
-        if (res.success) {
+        if (res.data.success) {
           ElMessage.success('注册成功，请登录')
           // 注册成功后自动切换到登录模式
           isLogin.value = true
@@ -163,7 +163,7 @@ async function handleSubmit() {
           form.confirmPassword = ''
           formRef.value && formRef.value.clearValidate()
         } else {
-          ElMessage.error(res.data || '注册失败')
+          ElMessage.error(res.data?.message || res.data?.msg || '注册失败')
         }
       } catch (e) {
         ElMessage.error('注册失败，请检查网络')

@@ -460,7 +460,7 @@
 <script setup>
 import './Speech-Student.css'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { ArrowLeft, Document, ChatDotRound, Comment, CircleCheck, CircleClose, Loading, Timer, Check, QuestionFilled, User } from '@element-plus/icons-vue'
+import { ArrowLeft, Document, ChatDotRound, Comment, CircleCheck, CircleClose, Loading, Timer, Check, QuestionFilled, User, Refresh, ChatDotSquare, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserInfoStore } from '../stores/userInfo.js'
 import { useActivityStore } from '../stores/activity.js'
@@ -474,6 +474,8 @@ const activityStore = useActivityStore()
 const route = useRoute()
 
 const userId = userInfoStore.id  // 当前学生id
+//const userId = computed(() => userInfoStore.id)
+console.log(userInfoStore.nickname)
 const activity = computed(() => activityStore.getActivityById(route.params.id) || {})
 
 const activeTab = ref('test')
@@ -585,7 +587,7 @@ const connectWebSocket = async () => {
     await loadWebSocketLibraries()
     
     // 创建 SockJS 连接
-    const socket = new SockJS('http://192.168.1.107:8080/ws/quiz')
+    const socket = new SockJS('http://localhost:8080/ws/quiz')
     stompClient = Stomp.over(socket)
     
     // 配置 STOMP 客户端
@@ -1180,6 +1182,7 @@ const checkMyFeedback = async () => {
   const paceMap = ['fast', 'normal', 'slow']
   const difficultyMap = ['hard', 'normal', 'easy']
   const understandingMap = ['clear', 'confused']
+  console.log(userId,'hhhh')
   try {
     const res = await getMyFeedbackHistory(route.params.id, userId)
     if (res.data && res.data.success && res.data.data) {

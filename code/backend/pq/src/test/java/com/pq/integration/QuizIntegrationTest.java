@@ -42,24 +42,28 @@ class QuizIntegrationTest {
 
     private Integer testActivityId;
     private Integer testUserId = 1001;
+    private String testNickName = "testUser";
 
     @BeforeEach
     void setUp() {
         // 创建测试活动
         Activity activity = new Activity()
-                .setName("AI题目生成测试活动")
-                .setDescription("用于测试AI题目生成功能的活动")
+                .setTitle("AI题目生成测试活动")
+                .setContent("用于测试AI题目生成功能的活动")
                 .setStartTime(new Date())
                 .setEndTime(new Date(System.currentTimeMillis() + 3600000))
                 .setStatus(0)
-                .setCreatorId(1);
+                .setCurNum(0)
+                .setCreateId(1);
         activityService.save(activity);
         testActivityId = activity.getId();
+
 
         // 添加测试用户到活动
         ActivityMember member = new ActivityMember()
                 .setActivityId(testActivityId)
-                .setUserId(testUserId);
+                .setUserId(testUserId)
+                .setNickname(testNickName);
         activityMemberService.save(member);
         
         System.out.println("=== 测试环境准备完成 ===");

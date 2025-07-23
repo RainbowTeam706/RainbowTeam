@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
-import {ref} from 'vue'
+
 export const useUserInfoStore = defineStore('user', {
   state: () => ({
-    id: 0,
+    id: null,
     username: '测试名',
     nickname: '孙悟空'
   }),
