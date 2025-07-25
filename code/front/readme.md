@@ -317,40 +317,46 @@ telnet your-backend-server.com 8080
 
 ```
 pq-vite/
-├── public/                    # 静态资源目录
-│   ├── pdf.worker.js         # PDF 处理工作线程
-│   └── vite.svg              # 应用图标
-├── src/                      # 源代码目录
-│   ├── api/                  # API 接口层
-│   │   ├── activity.js       # 活动相关接口
-│   │   └── feedback.js       # 反馈相关接口
-│   ├── assets/               # 静态资源
-│   │   └── vue.svg           # Vue 图标
-│   ├── components/           # 通用组件
-│   │   ├── Login.vue         # 登录组件
-│   │   ├── Main.vue          # 主页组件
-│   │   ├── Myself.vue        # 个人中心
-│   │   └── NavBottom.vue     # 底部导航
-│   ├── components-student/   # 学生端组件
-│   │   └── Speech-Student.vue # 学生演讲页面
-│   ├── components-teacher/   # 教师端组件
-│   │   ├── Speech-Teacher.vue # 教师演讲页面
-│   │   ├── Popquiz-Teacher.vue # 教师出题页面
-│   │   └── Feedback-Teacher.vue # 教师反馈页面
-│   ├── router/               # 路由配置
-│   │   └── index.js          # 路由定义
-│   ├── stores/               # 状态管理
-│   │   ├── activity.js       # 活动状态
-│   │   ├── counter.js        # 计数器状态
-│   │   └── user.js           # 用户状态
-│   ├── utils/                # 工具函数
-│   │   └── request.js        # HTTP 请求封装
-│   ├── App.vue               # 根组件
-│   ├── main.js               # 应用入口
-│   └── style.css             # 全局样式
-├── index.html                # HTML 模板
-├── package.json              # 项目配置
-├── package-lock.json         # 依赖锁定文件
-├── vite.config.js            # Vite 配置
-└── README.md                 # 项目文档
+├── index.html                  # 项目入口 HTML 文件
+├── package-lock.json           # 依赖锁定文件，确保依赖版本一致
+├── package.json                # 项目依赖及脚本配置
+├── public/                     # 公共静态资源目录（不会被打包处理）
+│   ├── pdf.worker.js           # PDF 相关的 worker 脚本
+│   └── vite.svg                # Vite 标志图片
+├── README.md                   # 项目说明文档
+├── src/                        # 源码目录
+│   ├── api/                    # 前端与后端接口请求相关 JS 文件
+│   │   ├── activity.js         # 活动相关接口
+│   │   ├── discussion.js       # 讨论区相关接口
+│   │   ├── feedback.js         # 反馈相关接口
+│   │   ├── quiz.js             # 测验相关接口
+│   │   └── user.js             # 用户相关接口
+│   ├── App.vue                 # Vue 主组件
+│   ├── assets/                 # 静态资源（如图片等）
+│   │   └── vue.svg             # Vue 标志图片
+│   ├── components/             # 通用组件
+│   │   ├── DiscussionArea.vue      # 讨论区主组件
+│   │   ├── DiscussionAreaItem.vue  # 讨论区单条评论组件
+│   │   ├── Login.vue               # 登录组件
+│   │   ├── Main.vue                # 主页面组件
+│   │   ├── Myself.vue              # 个人中心组件
+│   │   └── NavBottom.vue           # 底部导航栏组件
+│   ├── components-student/     # 学生端专用组件
+│   │   ├── Speech-Student.css      # 学生端语音相关样式
+│   │   └── Speech-Student.vue      # 学生端语音组件
+│   ├── components-teacher/     # 教师端专用组件
+│   │   ├── Popquiz-Teacher.vue     # 教师端弹出测验组件
+│   │   ├── Speech-Teacher.css      # 教师端语音相关样式
+│   │   └── Speech-Teacher.vue      # 教师端语音组件
+│   ├── main.js                 # 项目入口 JS 文件
+│   ├── router/                 # 路由配置目录
+│   │   └── index.js                # 路由配置文件
+│   ├── stores/                 # 状态管理相关文件
+│   │   ├── activity.js             # 活动状态管理
+│   │   ├── token.js                # Token 状态管理
+│   │   └── userInfo.js             # 用户信息状态管理
+│   ├── style.css               # 全局样式文件
+│   └── utils/                  # 工具函数目录
+│       └── request.js              # 封装的请求方法
+├── vite.config.js              # Vite 配置文件
 ```
