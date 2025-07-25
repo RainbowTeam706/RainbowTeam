@@ -202,18 +202,18 @@ const activityStore = useActivityStore()
 // 活动对象结构说明
 const activities = ref([
   {
-    id: 0,                  // 活动ID
-    createId: 0,            // 创建者ID
-    title: '哈哈哈哈',              // 活动标题
-    content: '迟点发fheuiohfoirehgoihfreiohtgiuht5nriuhgujtirhngui',            // 活动内容
-    createName:'孙悟空',
-    location: '234',           // 地点
-    startTime: '2025-07-15T10:00:00',          // 开始时间（ISO格式字符串）
-    endTime: '2025-07-15T12:00:00',            // 结束时间（ISO格式字符串）
-    inviteCode: '2356567',         // 邀请码
+    id: null,                  // 活动ID
+    createId: '',            // 创建者ID
+    title: '',              // 活动标题
+    content: '',            // 活动内容
+    createName:'',
+    location: '',           // 地点
+    startTime: '',          // 开始时间（ISO格式字符串）
+    endTime: '',            // 结束时间（ISO格式字符串）
+    inviteCode: '',         // 邀请码
     createTime: '',         // 创建时间（ISO格式字符串）
-    curNum: 20,              // 当前参与人数
-    status: 0               // 活动状态（0=未开始, 1=进行中, 2=已结束...）
+    curNum: null,              // 当前参与人数
+    status: null               // 活动状态（0=未开始, 1=进行中, 2=已结束...）
   }
 ])
 const activeFilter = ref('all') // 当前筛选条件
@@ -363,18 +363,29 @@ async function handleBook() {
   ) {
     return ElMessage.error("请填写完整信息");
   }
+  // 方案二：将本地时间字符串转为UTC的ISO字符串（去掉Z）
+  function toUTCString(localStr) {
+    const [date, time] = localStr.split('T')
+    const [year, month, day] = date.split('-')
+    const [hour, minute, second] = time.split(':')
+    const localDate = new Date(
+      Number(year), Number(month) - 1, Number(day),
+      Number(hour), Number(minute), Number(second)
+    )
+    return localDate.toISOString().slice(0, 19)
+  }
   try {
     const res = await createActivity({
       title: bookForm.title,
       content: bookForm.content,
       location: bookForm.location,
-      startTime: bookForm.startTime,
-      endTime: bookForm.endTime
+      startTime: toUTCString(bookForm.startTime),
+      endTime: toUTCString(bookForm.endTime)
     })
     if (res.data && res.data.success) {
       ElMessage.success("活动创建成功！");
       bookDialogVisible.value = false;
-      await loadActivities(); // 刷新活动列表
+      await loadActivities();
     } else {
       ElMessage.error(res.data?.message || "创建失败！");
     }

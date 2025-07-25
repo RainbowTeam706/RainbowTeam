@@ -29,14 +29,13 @@ export function createActivity(data) {
 }
 //演讲中发送题目
 export function sendPopquiz({ activityId, questionCount, lastTime, text }) {
-  return request.post('/quiz/popQuiz', null, 
-    {
-      activityId,
-      questionCount,
-      lastTime,
-      text
-    });//��ѩ���øģ�ȥ��params������ֱ�Ӵ��ݶ���
-}
+   return request.post('/quiz/popQuiz', {
+  activityId,
+  questionCount,
+  lastTime,
+  text
+   });
+  }
 
 export function submit(submitData) {
   return request.post(`/quiz/admit?popQuizId=${submitData.popQuizId}&userId=${submitData.userId}`, submitData.answers)
