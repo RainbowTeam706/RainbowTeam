@@ -27,18 +27,27 @@ export function createActivity(data) {
     data
   })
 }
-//演讲中发送题目
-export function sendPopquiz({ activityId, questionCount, lastTime, text }) {
-   return request.post('/quiz/popQuiz', {
-  activityId,
-  questionCount,
-  lastTime,
-  text
-   });
-  }
+// 发题（基于已生成的 popQuiz）
+export function sendPopquiz({ popQuizId, questionCount, lastTime }) {
+  return request.post('/quiz/popQuiz', {
+    popQuizId,
+    questionCount,
+    lastTime
+  })
+}
 
 export function submit(submitData) {
   return request.post(`/quiz/admit?popQuizId=${submitData.popQuizId}&userId=${submitData.userId}`, submitData.answers)
+}
+
+// 学生端：查询当前活动进行中的测验（用于刷新恢复）
+export function getActiveQuiz(activityId, userId) {
+  return request.get(`/quiz/active?activityId=${activityId}&userId=${userId}`)
+}
+
+// 学生端：保存答题草稿（用于断网/刷新恢复）
+export function saveQuizDraft(popQuizId, userId, answers) {
+  return request.post(`/quiz/draft?popQuizId=${popQuizId}&userId=${userId}`, answers)
 }
 
 export function ExamList(activityId) {
@@ -50,4 +59,25 @@ export function ShowTestService(popQuizId,userId) {
 export function GetExamStat(popQuizId) {
   return request.get(`/quiz/stat/${popQuizId}`)
 }
+
+// 文件解析任务：上传
+export function uploadIngestFile(file, activityId) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('activityId', activityId)
+  return request.post('/file-ingest/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+// 文件解析任务：状态查询
+export function getIngestStatus(taskId) {
+  return request.get(`/file-ingest/status/${taskId}`)
+}
+
+// 文件解析任务：活动列表
+export function getIngestTaskList(activityId) {
+  return request.get(`/file-ingest/list/${activityId}`)
+}
+
 

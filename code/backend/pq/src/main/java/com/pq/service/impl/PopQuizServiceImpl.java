@@ -18,7 +18,7 @@ import java.util.List;
 public class PopQuizServiceImpl extends ServiceImpl<PopQuizMapper, PopQuiz> implements IPopQuizService {
     @Override
     public void updateStatus() {
-        log.info("开始执行测试更新定时任务");
+        //log.info("开始执行测试更新定时任务");
         List<PopQuiz> popQuizs = query().in("status",0).list();  //查询所有状态为0（进行中）
         Date now = new Date();
         for (PopQuiz popQuiz : popQuizs) {
@@ -26,16 +26,16 @@ public class PopQuizServiceImpl extends ServiceImpl<PopQuizMapper, PopQuiz> impl
                 ExamStatus newStatus = calculateNewStatus(popQuiz, now);
                 if (newStatus != null && newStatus.getCode() != popQuiz.getStatus()) {
                     update().eq("id", popQuiz.getId()).set("status", newStatus.getCode()).update();
-                    log.info("测试ID: {}, 状态从 {} 更新为 {}",
-                            popQuiz.getId(),
-                            ActivityStatus.fromCode(popQuiz.getStatus()).getDescription(),
-                            newStatus.getDescription());
+//                    log.info("测试ID: {}, 状态从 {} 更新为 {}",
+//                            popQuiz.getId(),
+//                            ActivityStatus.fromCode(popQuiz.getStatus()).getDescription(),
+//                            newStatus.getDescription());
                 }
             } catch (Exception e) {
-                log.error("更新测试状态失败，测试ID: {}, 错误: {}", popQuiz.getId(), e.getMessage());
+                //log.error("更新测试状态失败，测试ID: {}, 错误: {}", popQuiz.getId(), e.getMessage());
             }
         }
-        log.info("测试状态更新定时任务执行完成");
+        //log.info("测试状态更新定时任务执行完成");
     }
 
     /**

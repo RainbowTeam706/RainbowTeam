@@ -9,7 +9,8 @@ public interface IAIQuestionService {
      * @param topic 题目主题/文本内容
      * @param questionCount 题目数量
      * @param popQuizId PopQuiz ID
+     * @param activityId 活动ID（用于活动级记忆隔离）
      * @return 生成的题目列表
      */
-    List<QuestionBank> generateQuestions(String topic, int questionCount, Integer popQuizId);
+    List<QuestionBank> generateQuestions(String topic, int questionCount, Integer popQuizId, Integer activityId);
 }

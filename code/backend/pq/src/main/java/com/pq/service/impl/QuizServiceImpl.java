@@ -2,6 +2,7 @@ package com.pq.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.google.gson.Gson;
+import com.pq.entity.Activity;
 import com.pq.entity.ActivityMember;
 import com.pq.entity.PopQuiz;
 import com.pq.entity.QuestionBank;
@@ -33,35 +34,45 @@ public class QuizServiceImpl implements IQuizService {
     private IActivityMemberService activityMemberService;
 
     @Resource
-    private IAIQuestionService aiQuestionService;
+    private IActivityService activityService;
 
     @Override
     @Transactional
     public void createAndSendQuiz(Integer activityId, Integer questionCount, int lastTime, String text) {
+        throw new UnsupportedOperationException("发题接口已升级，请使用 popQuizId + questionCount + lastTime");
+    }
 
-        // 1. 创建 PopQuiz
+    @Override
+    @Transactional
+    public void createAndSendQuizByPopQuizId(Integer popQuizId, Integer questionCount, int lastTime) {
+        PopQuiz popQuiz = popQuizService.getById(popQuizId);
+        if (popQuiz == null) {
+            throw new IllegalArgumentException("popQuiz 不存在: " + popQuizId);
+        }
+        if (popQuiz.getSent() != null && popQuiz.getSent() == 1) {
+            throw new IllegalStateException("该测验已发题，不能重复发题");
+        }
+
+        Integer activityId = popQuiz.getActivityId();
+        Activity activity = activityService.getById(activityId);
+        if (activity == null) {
+            throw new IllegalArgumentException("活动不存在: " + activityId);
+        }
+        if (activity.getStatus() == 2) {
+            throw new IllegalStateException("活动已结束，操作被拒绝");
+        }
+
+        // 更新时间窗口（发题时才设置）
         Date startTime = new Date();
         Date endTime = new Date(startTime.getTime() + lastTime * 60 * 1000L);
-        PopQuiz popQuiz = new PopQuiz()
-                .setActivityId(activityId)
-                .setStartTime(startTime)
-                .setEndTime(endTime)
-                .setStatus(0);
-        popQuizService.save(popQuiz);
+        popQuiz.setStartTime(startTime).setEndTime(endTime).setStatus(0);
+        popQuizService.updateById(popQuiz);
 
-        // 2. 使用AI生成题目
-        List<QuestionBank> questionList;
-        try {
-            System.out.println("开始使用AI生成题目 - 主题: " + text + ", 数量: " + questionCount);
-            questionList = aiQuestionService.generateQuestions(text, 5, popQuiz.getId());
-            System.out.println("AI成功生成" + questionList.size() + "道题目");
-        } catch (Exception e) {
-            System.err.println("AI生成题目失败，使用备用方案: " + e.getMessage());
-            e.printStackTrace();
-            questionList = generateFallbackQuestions(text, questionCount, popQuiz.getId());
+        // 直接读取该测验下已生成题目（文件解析阶段已生成）
+        List<QuestionBank> questionList = questionBankService.list(new QueryWrapper<QuestionBank>().eq("popQuizId", popQuizId));
+        if (questionList == null || questionList.isEmpty()) {
+            throw new IllegalStateException("该测验暂无题目，无法发题");
         }
-        
-        questionBankService.saveBatch(questionList);
 
         // 3. 查询所有参与学生
         List<Integer> studentIds = activityMemberService
@@ -98,14 +109,15 @@ public class QuizServiceImpl implements IQuizService {
                 return map;
             }).collect(Collectors.toList());
 
-            // 组装完整的推送数据，包含题目和时间限制
+            // 组装完整的推送数据，包含题目和绝对截止时间
             Map<String, Object> pushData = new HashMap<>();
             pushData.put("questions", pushQuestions);
-            pushData.put("lastTime", lastTime * 60); // 转换为秒
+            pushData.put("lastTime", lastTime * 60); // 兼容旧前端（秒）
+            pushData.put("startTime", startTime);
+            pushData.put("endTime", endTime);
             pushData.put("activityId", activityId);
             pushData.put("questionCount", questionCount);
             pushData.put("popQuizId", popQuiz.getId());
-            pushData.put("text", text);
 
             System.out.println("用户ID: " + userId + " 分配到的AI生成题目：");
             System.out.println("时间限制: " + lastTime + "分钟 (" + (lastTime * 60) + "秒)");
@@ -115,27 +127,11 @@ public class QuizServiceImpl implements IQuizService {
             System.out.println("--------------------------------------------------");
             webSocketService.sendQuizToStudent(userId, pushData);
         }
-    }
 
-    /**
-     * 备用题目生成方法
-     */
-    private List<QuestionBank> generateFallbackQuestions(String text, int questionCount, Integer popQuizId) {
-        System.out.println("使用备用方案生成" + questionCount + "道题目");
-        List<QuestionBank> questionList = new ArrayList<>();
-        Random random = new Random();
-        for (int i = 1; i <= questionCount; i++) {
-            char randomAnswer = (char) ('A' + random.nextInt(4));
-            QuestionBank q = new QuestionBank()
-                    .setPopQuizId(popQuizId)
-                    .setContent("题目" + i + "：关于'" + text + "'的问题")
-                    .setOptions("[\"选项A\",\"选项B\",\"选项C\",\"选项D\"]")
-                    .setAnswer(String.valueOf(randomAnswer));
-            questionList.add(q);
-        }
-        return questionList;
+        // 标记已发题（一个测验只允许发一次）
+        popQuiz.setSent(1);
+        popQuizService.updateById(popQuiz);
     }
-
 
     @Override
     @Transactional
@@ -144,7 +140,19 @@ public class QuizServiceImpl implements IQuizService {
             System.out.println("开始提交答案 - PopQuizID: " + popQuizId + ", 用户ID: " + userId);
             System.out.println("答案数据: " + answers);
 
-            // 1. 查询用户的答题记录
+            // 1. 校验测验是否已截止（以后端时间为准）
+            PopQuiz popQuiz = popQuizService.getById(popQuizId);
+            if (popQuiz == null) {
+                System.err.println("测验不存在 - PopQuizID: " + popQuizId);
+                return false;
+            }
+            Date now = new Date();
+            if (popQuiz.getEndTime() != null && now.after(popQuiz.getEndTime())) {
+                System.err.println("测验已截止，拒绝提交 - PopQuizID: " + popQuizId + ", 用户ID: " + userId);
+                return false;
+            }
+
+            // 2. 查询用户的答题记录
             QueryWrapper<UserAnswer> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("popQuizId", popQuizId)
                     .eq("userId", userId);
@@ -246,6 +254,8 @@ public class QuizServiceImpl implements IQuizService {
                 map.put("startTime", popQuiz.getStartTime());
                 map.put("endTime", popQuiz.getEndTime());
                 map.put("status", popQuiz.getStatus());
+                map.put("taskId", popQuiz.getTaskId());
+                map.put("sent", popQuiz.getSent() == null ? 0 : popQuiz.getSent());
 
                 // 计算持续时间（分钟）
                 long durationMinutes = (popQuiz.getEndTime().getTime() - popQuiz.getStartTime().getTime()) / (1000 * 60);
@@ -434,6 +444,118 @@ public class QuizServiceImpl implements IQuizService {
             e.printStackTrace();
             throw new RuntimeException("获取PopQuiz统计失败", e);
         }
+    }
+
+    @Override
+    public Map<String, Object> getActiveQuizForStudent(Integer activityId, Integer userId) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 查找该活动下进行中的测验（已发题且未截止）
+        QueryWrapper<PopQuiz> popQuizQuery = new QueryWrapper<>();
+        popQuizQuery.eq("activityId", activityId)
+                .eq("sent", 1)
+                .orderByDesc("startTime");
+        List<PopQuiz> popQuizList = popQuizService.list(popQuizQuery);
+
+        if (popQuizList == null || popQuizList.isEmpty()) {
+            result.put("active", false);
+            return result;
+        }
+
+        Date now = new Date();
+        PopQuiz activeQuiz = popQuizList.stream()
+                .filter(q -> q.getStartTime() != null && q.getEndTime() != null)
+                .filter(q -> !now.before(q.getStartTime()) && now.before(q.getEndTime()))
+                .findFirst()
+                .orElse(null);
+
+        if (activeQuiz == null) {
+            result.put("active", false);
+            return result;
+        }
+
+        QueryWrapper<UserAnswer> uaQuery = new QueryWrapper<>();
+        uaQuery.eq("popQuizId", activeQuiz.getId()).eq("userId", userId);
+        UserAnswer userAnswer = userAnswerService.getOne(uaQuery);
+        if (userAnswer == null) {
+            result.put("active", false);
+            return result;
+        }
+
+        List<Integer> questionIds = Arrays.stream(userAnswer.getQuestionIds().split(","))
+                .filter(s -> s != null && !s.isEmpty())
+                .map(Integer::parseInt)
+                .collect(Collectors.toList());
+
+        Map<Integer, QuestionBank> questionMap = questionBankService.listByIds(questionIds)
+                .stream().collect(Collectors.toMap(QuestionBank::getId, q -> q));
+
+        List<Map<String, Object>> questions = new ArrayList<>();
+        for (Integer qid : questionIds) {
+            QuestionBank q = questionMap.get(qid);
+            if (q == null) continue;
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", q.getId());
+            map.put("content", q.getContent());
+            map.put("options", new Gson().fromJson(q.getOptions(), List.class));
+            questions.add(map);
+        }
+
+        Map<String, Integer> draftAnswers = new HashMap<>();
+        String options = userAnswer.getOptions();
+        if (options != null && !options.isEmpty()) {
+            String[] arr = options.split(",");
+            for (int i = 0; i < arr.length; i++) {
+                String ans = arr[i];
+                if (ans == null || ans.isEmpty()) continue;
+                int optionIdx = ans.charAt(0) - 'A';
+                if (optionIdx >= 0) {
+                    draftAnswers.put(String.valueOf(i), optionIdx);
+                }
+            }
+        }
+
+        long totalSeconds = Math.max(0, (activeQuiz.getEndTime().getTime() - activeQuiz.getStartTime().getTime()) / 1000);
+
+        result.put("active", true);
+        result.put("popQuizId", activeQuiz.getId());
+        result.put("activityId", activityId);
+        result.put("startTime", activeQuiz.getStartTime());
+        result.put("endTime", activeQuiz.getEndTime());
+        result.put("lastTime", totalSeconds);
+        result.put("questions", questions);
+        result.put("answers", draftAnswers);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public boolean saveDraftAnswers(Integer popQuizId, Integer userId, Map<Integer, Integer> answers) {
+        PopQuiz popQuiz = popQuizService.getById(popQuizId);
+        if (popQuiz == null) return false;
+        Date now = new Date();
+        if (popQuiz.getEndTime() != null && now.after(popQuiz.getEndTime())) {
+            return false;
+        }
+
+        QueryWrapper<UserAnswer> query = new QueryWrapper<>();
+        query.eq("popQuizId", popQuizId).eq("userId", userId);
+        UserAnswer userAnswer = userAnswerService.getOne(query);
+        if (userAnswer == null) return false;
+
+        String[] questionIdArray = userAnswer.getQuestionIds().split(",");
+        List<String> answerList = new ArrayList<>();
+        for (int i = 0; i < questionIdArray.length; i++) {
+            Integer selectedOption = answers.get(i);
+            if (selectedOption == null) {
+                answerList.add("");
+            } else {
+                answerList.add(String.valueOf((char) ('A' + selectedOption)));
+            }
+        }
+
+        userAnswer.setOptions(String.join(",", answerList));
+        return userAnswerService.updateById(userAnswer);
     }
 }
 

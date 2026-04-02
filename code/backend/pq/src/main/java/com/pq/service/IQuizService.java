@@ -6,6 +6,8 @@ import java.util.Map;
 public interface IQuizService {
     void createAndSendQuiz(Integer activityId, Integer questionCount,int lastTime, String text);
 
+    void createAndSendQuizByPopQuizId(Integer popQuizId, Integer questionCount, int lastTime);
+
     /**
      * 提交学生答案
      *
@@ -21,4 +23,14 @@ public interface IQuizService {
     Map<String, Object> getStudentTestResult(Integer popQuizId, Integer userId);
 
     Map<String, Object> getPopQuizStatistics(Integer popQuizId);
+
+    /**
+     * 查询学生在指定活动中的进行中测验（用于刷新/重连恢复）
+     */
+    Map<String, Object> getActiveQuizForStudent(Integer activityId, Integer userId);
+
+    /**
+     * 保存学生答题草稿（题目索引 -> 选项索引）
+     */
+    boolean saveDraftAnswers(Integer popQuizId, Integer userId, Map<Integer, Integer> answers);
 }

@@ -1,14 +1,14 @@
-/* 页面整体布局 */
+/* ??????岼?? */
 .speech-page {
   min-height: 100vh;
   background: #f5f7fa;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  padding-bottom: 90px; /* 为底部操作栏预留空间 */
+  padding-bottom: 90px; /* ???????????????? */
 }
 
-/* 顶部导航栏 */
+/* ?????????? */
 .top-nav {
   display: flex;
   align-items: center;
@@ -40,7 +40,7 @@
   border-radius: 12px;
 }
 
-/* 主要内容区域 */
+/* ??????????? */
 .main-content {
   flex: 1;
   display: flex;
@@ -49,7 +49,7 @@
   padding: 0 20px;
 }
 
-/* 活动详情 */
+/* ?????? */
 .detail-content {
   background: #fff;
   border-radius: 16px;
@@ -129,7 +129,7 @@
   word-break: break-all;
 }
 
-/* Popquiz随堂测试输入区域 */
+/* Popquiz???ò??????????? */
 .popquiz-input {
   width: 90%;
   margin: 20px auto 0 auto;
@@ -140,10 +140,95 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 12px 0 24px 0;
+  margin: 12px 0 8px 0;
 }
 
-/* 底部功能按钮组 */
+.record-btn-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px 0;
+  flex-wrap: wrap;
+}
+
+.ingest-task-list {
+  width: 90%;
+  margin: 0 auto 20px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 12px;
+}
+
+.ingest-task-title {
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 10px;
+}
+
+.ingest-task-item {
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 8px;
+  min-height: 88px;
+}
+
+.ingest-task-item:last-child {
+  margin-bottom: 0;
+}
+
+.task-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.task-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  word-break: break-all;
+  line-height: 1.4;
+  max-height: 40px;
+  overflow: hidden;
+}
+
+.task-side {
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.task-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.task-popquiz-btn,
+.task-result-btn {
+  min-width: 76px;
+}
+
+.task-error {
+  font-size: 12px;
+  color: #f56c6c;
+  margin-top: 6px;
+  line-height: 1.3;
+  max-height: 32px;
+  overflow: hidden;
+}
+
+/* ??????????? */
 .bottom-action-bar {
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   border-top: 1px solid #e9ecef;
@@ -162,24 +247,24 @@
   gap: 16px;
   justify-content: center;
   align-items: center;
-  max-width: 480px; /* 减少最大宽度以适应三个按钮 */
+  max-width: 480px; /* ?????????????????????? */
   margin: 0 auto;
 }
 
 .action-btn {
   flex: 1;
-  min-height: 52px; /* 稍微增加高度 */
-  border-radius: 14px; /* 增加圆角 */
+  min-height: 52px; /* ????????? */
+  border-radius: 14px; /* ??????? */
   font-size: 0.9rem;
   font-weight: 500;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 10px 16px; /* 增加内边距 */
+  padding: 10px 16px; /* ???????? */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid transparent;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12); /* 增强阴影 */
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12); /* ?????? */
 }
 
 .action-btn:not(.el-button--primary) {
@@ -219,7 +304,7 @@
   line-height: 1;
 }
 
-/* 测试列表弹窗 */
+/* ?????б????? */
 .test-list-dialog :deep(.el-dialog) {
   border-radius: 16px;
   max-width: 90vw;
@@ -343,7 +428,7 @@
   flex: 1;
 }
 
-/* 测试统计弹窗 */
+/* ?????????? */
 .stat-questions-list {
   display: flex;
   flex-direction: column;
@@ -384,7 +469,7 @@
   color: #409eff;
 }
 
-/* 反馈弹窗 */
+/* ???????? */
 .feedback-dialog .el-dialog__body {
   padding: 0;
   max-height: 70vh;
@@ -479,7 +564,7 @@
   transition: width 0.6s ease;
 }
 
-/* 渐变色填充 */
+/* ???????? */
 .chart-fill.fast, .chart-fill.hard, .chart-fill.confused { 
   background: linear-gradient(90deg, #ff6b6b, #ee5a52); 
 }
@@ -501,7 +586,7 @@
   text-align: right;
 }
 
-/* 评论区（学生提问）弹窗 */
+/* ???????????????????? */
 .comment-dialog :deep(.el-dialog) {
   border-radius: 16px;
   max-width: 90vw;
@@ -559,9 +644,9 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 40vh; /* 限制最大高度，超出则滚动 */
+  max-height: 40vh; /* ??????????????????? */
   overflow-y: auto;
-  padding-right: 8px; /* 为滚动条留出空间 */
+  padding-right: 8px; /* ?????????????? */
 }
 
 .question-item {
@@ -615,7 +700,7 @@
   justify-content: flex-start;
 }
 
-/* 空状态（无数据时显示） */
+/* ?????????????????? */
 .empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -632,7 +717,7 @@
   margin: 0;
 }
 
-/* 响应式设计 */
+/* ??????? */
 @media (max-width: 768px) {
   .action-buttons-container {
     gap: 12px;

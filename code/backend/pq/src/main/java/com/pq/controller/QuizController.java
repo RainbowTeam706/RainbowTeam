@@ -18,12 +18,24 @@ public class QuizController {
 
     @PostMapping("/popQuiz")
     public Result sendQuiz(@RequestBody Map<String, Object> requestBody) {
-        Integer activityId = (Integer) requestBody.get("activityId");
+        Integer popQuizId = (Integer) requestBody.get("popQuizId");
         Integer questionCount = (Integer) requestBody.get("questionCount");
-        int lastTime = (int) requestBody.get("lastTime"); // 假设 lastTime 也在请求体中
-        String text = (String) requestBody.get("text");
-        quizService.createAndSendQuiz(activityId, questionCount,lastTime,text);
-        return Result.ok();
+        int lastTime = (int) requestBody.get("lastTime");
+
+        if (popQuizId == null) {
+            return Result.fail("popQuizId不能为空");
+        }
+
+        if (questionCount == null || questionCount <= 0) {
+            questionCount = 3;
+        }
+
+        try {
+            quizService.createAndSendQuizByPopQuizId(popQuizId, questionCount, lastTime);
+            return Result.ok();
+        } catch (IllegalStateException e) {
+            return Result.fail(e.getMessage());
+        }
     }
 
     /**
@@ -112,6 +124,37 @@ public class QuizController {
         }
     }
 
+    /**
+     * 学生端刷新/重连后恢复：查询活动内当前进行中的测验
+     */
+    @GetMapping("/active")
+    public Result getActiveQuiz(@RequestParam("activityId") Integer activityId,
+                                @RequestParam("userId") Integer userId) {
+        try {
+            Map<String, Object> active = quizService.getActiveQuizForStudent(activityId, userId);
+            return Result.ok(active);
+        } catch (Exception e) {
+            log.error("查询进行中测验失败 - activityId: {}, userId: {}, err: {}",
+                    activityId, userId, e.getMessage(), e);
+            return Result.fail("查询进行中测验失败");
+        }
+    }
 
+    /**
+     * 学生端草稿保存：避免刷新/断网导致答题记录丢失
+     */
+    @PostMapping("/draft")
+    public Result saveDraft(@RequestParam("popQuizId") Integer popQuizId,
+                            @RequestParam("userId") Integer userId,
+                            @RequestBody Map<Integer, Integer> answers) {
+        try {
+            boolean ok = quizService.saveDraftAnswers(popQuizId, userId, answers);
+            return ok ? Result.ok() : Result.fail("草稿保存失败");
+        } catch (Exception e) {
+            log.error("保存草稿失败 - popQuizId: {}, userId: {}, err: {}",
+                    popQuizId, userId, e.getMessage(), e);
+            return Result.fail("保存草稿失败");
+        }
+    }
 
-} 
+}

@@ -37,23 +37,13 @@
           </div>
         </div>
       </div>
-       <!-- 文本输入框 /////////////////////////////////-->
-        <!-- 文本输入区 -->
-<el-input
-  v-model="popquizText"
-  type="textarea"
-  :rows="14"
-  placeholder="请在此输入或上传文件自动填充文本"
-  class="popquiz-input"
-></el-input>
-
-<el-dialog v-model="popquizDialogVisible" title="生成题目" width="350px">
+ <el-dialog v-model="popquizDialogVisible" title="发题设置" width="350px">
   <el-form :model="popquizForm">
-    <el-form-item label="题目数量">
-      <el-input v-model.number="popquizForm.count" type="number" min="1" placeholder="请输入题目数量" />
+    <el-form-item label="题目数量(1-10)">
+      <el-input v-model.number="popquizForm.count" type="number" min="1" max="10" placeholder="请输入题目数量" />
     </el-form-item>
-    <el-form-item label="答题时长(分钟)">
-      <el-input v-model.number="popquizForm.duration" type="number" min="1" placeholder="请输入总时长" />
+    <el-form-item label="答题时长(分钟 1-30)">
+      <el-input v-model.number="popquizForm.duration" type="number" min="1" max="30" placeholder="请输入总时长" />
     </el-form-item>
   </el-form>
   <template #footer>
@@ -66,80 +56,72 @@
   <el-upload
     :show-file-list="false"
     :before-upload="handleFileUpload"
-    accept=".pdf,.ppt,.pptx"
+    :disabled="isActivityEnded"
+    accept=".txt,.pdf,.pptx,.docx,.webm,.wav,.mp3,.m4a,.ogg"
   >
-    <el-button type="primary">上传PDF/PPT</el-button>
+    <el-button type="primary" :disabled="isActivityEnded">上传文件（TXT/PDF/PPTX/DOCX/音频）</el-button>
   </el-upload>
+</div>
+
+<div class="record-btn-row">
   <el-button
-    :type="isRecording ? 'danger' : 'primary'"
-    @click="toggleRecording"
-    style="margin-left: 20px;"
+    type="success"
+    :disabled="isActivityEnded || isRecording"
+    @click="startRecording"
   >
-    {{ isRecording ? '停止录音' : '开始录音转文本' }}
+    开始录音
   </el-button>
-  <el-button type="success" @click="popquizDialogVisible = true" style="margin-left: 16px;">Popquiz</el-button>
+  <el-button
+    type="warning"
+    :disabled="!isRecording"
+    @click="stopRecording"
+  >
+    停止录音
+  </el-button>
+  <el-button
+    type="primary"
+    :disabled="isActivityEnded || !recordedBlob || isRecording"
+    @click="uploadRecording"
+  >
+    上传录音
+  </el-button>
+</div>
+
+<div class="ingest-task-list" v-if="ingestTaskList.length > 0">
+  <div class="ingest-task-title">解析需要1~2分钟，请耐心等待...</div>
+  <div class="ingest-task-item" v-for="task in ingestTaskList" :key="task.taskId">
+    <div class="task-main">
+      <div class="task-name">{{ task.fileName }}</div>
+      <div class="task-error" v-if="task.errorMessage">{{ task.errorMessage }}</div>
+    </div>
+    <div class="task-side">
+      <el-tag :type="getIngestStatusTagType(task.status)">{{ task.status }}</el-tag>
+      <div class="task-actions">
+        <el-button
+          class="task-popquiz-btn"
+          type="success"
+          size="small"
+          :disabled="!canSendPopQuiz(task)"
+          @click="openPopQuizDialog(task)"
+        >
+          Pop quiz
+        </el-button>
+        <el-button
+          class="task-result-btn"
+          type="primary"
+          plain
+          size="small"
+          :disabled="canSendPopQuiz(task)"
+          @click="handleViewResult(task)"
+        >
+          答题结果
+        </el-button>
+      </div>
+    </div>
+  </div>
 </div>
     </el-scrollbar>
     
-    <!-- 测试列表弹窗 -->
-    <el-dialog
-      v-model="testListDialogVisible"
-      title="📋 测试列表"
-      width="90%"
-      :close-on-click-modal="false"
-      class="test-list-dialog"
-    >
-      <div class="test-list-content">
-        <div class="test-list-header">
-          <span class="test-list-title">活动测试记录</span>
-          <el-button 
-            type="primary" 
-            size="small" 
-            @click="refreshTestList"
-            :loading="loadingTestList"
-          >
-            刷新
-          </el-button>
-        </div>
-        
-        <div class="test-list-body">
-          <div v-if="testListData.length === 0" class="empty-state">
-            <el-icon size="48" color="#C0C4CC"><Document /></el-icon>
-            <p>暂无测试记录</p>
-          </div>
-          
-          <div v-else class="test-items">
-            <div 
-              v-for="(test, index) in testListData" 
-              :key="test.id"
-              class="test-item"
-              @click="showStat(test.id)"
-            >
-              <div class="test-item-header">
-                <span class="test-title">测试{{ index + 1 }}</span>
-                <span class="test-status" :class="getTestStatusClass(test.status)">
-                  {{ getTestStatusText(test.status) }}
-                </span>
-              </div>
-              <div class="test-item-content">
-                <div class="test-info">
-                  <span class="info-label">开始时间：</span>
-                  <span class="info-value">{{ formatDateTime(test.startTime) }}</span>
-                </div>
-                <div class="test-info">
-                  <span class="info-label">结束时间：</span>
-                  <span class="info-value">{{ formatDateTime(test.endTime) }}</span>
-                </div>
-                <div class="test-info">
-                  <span class="info-label">持续时间：</span>
-                  <span class="info-value">{{ test.durationMinutes }} 分钟</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </el-dialog>
     
     <!-- 统计弹窗 -->
     <el-dialog v-model="statDialogVisible" title="测试统计" width="90%">
@@ -158,7 +140,7 @@
             <div class="stat-q-content">{{ q.content }}</div>
             <ul class="stat-q-options">
               <li v-for="(opt, i) in q.options" :key="i">
-                {{ String.fromCharCode(65 + i) }}. {{ opt }}
+                {{ formatOptionForStat(opt, i) }}
               </li>
             </ul>
             <div class="stat-q-info">
@@ -308,15 +290,6 @@
     <!-- 底部功能按钮组 -->
     <div class="bottom-action-bar">
       <div class="action-buttons-container">
-        <!-- 测试列表按钮 -->
-        <el-button
-          :type="activeTab === 'test' ? 'primary' : ''"
-          class="action-btn"
-          @click="showTestList"
-        >
-          <el-icon><Document /></el-icon>
-          <span>测试列表</span>
-        </el-button>
 
         <!-- 反馈按钮 -->
         <el-button
@@ -344,7 +317,7 @@
 
 <script setup>
 import './Speech-Teacher.css'
-import { ref, nextTick, watch } from "vue";
+import { ref, nextTick, watch, onMounted, onBeforeUnmount } from "vue";
 import {
   ArrowLeft,
   Document,
@@ -354,17 +327,14 @@ import {
 } from "@element-plus/icons-vue";
 import { useRoute } from 'vue-router'
 import { useActivityStore } from '../stores/activity'
+import { useQuizWsStore } from '../stores/quizWs.js'
 import { computed } from 'vue'
 import {
   getFeedbackStats,
 } from '../api/feedback'
 //文本提交相关
-import * as pdfjsLib from "pdfjs-dist"
-pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.js"
-import JSZip from "jszip" //解析ppt文件
-//import PPTX from "pptxjs"
 import { ElMessage } from "element-plus"
-import { sendPopquiz,ExamList,GetExamStat } from "../api/activity" // 你需要实现这个API
+import { sendPopquiz, GetExamStat, uploadIngestFile, getIngestStatus, getIngestTaskList } from "../api/activity"
 
 /** 1. 引入echarts和相关状态变量 */
 import * as echarts from 'echarts'
@@ -416,12 +386,9 @@ const renderPieChart = () => {
 
 const popquizText = ref("")
 const popquizDialogVisible = ref(false)
-const popquizForm = ref({ count: 1, duration: 10 })
+const popquizForm = ref({ count: 3, duration: 3 })
+const selectedTaskForQuiz = ref(null)
 
-// 测试列表相关状态
-const testListDialogVisible = ref(false) // 测试列表弹窗
-const testListData = ref([]) // 测试列表数据
-const loadingTestList = ref(false) // 加载状态
 
 // 反馈相关状态
 const feedbackDialogVisible = ref(false) // 反馈弹窗
@@ -440,8 +407,10 @@ const commentDialogVisible = ref(false)
 //查询活动信息
 const route = useRoute()
 const activityStore = useActivityStore()
+const quizWsStore = useQuizWsStore()
 
 const activity = computed(() => activityStore.getActivityById(route.params.id) || {})
+const isActivityEnded = computed(() => Number(activity.value?.status) === 2)
 
 
 // 打开反馈弹窗
@@ -456,14 +425,6 @@ function showComment() {
   activeTab.value = 'comment'
   commentDialogVisible.value = true
 }
-
-// 监听测试列表弹窗关闭，重置按钮状态
-watch(testListDialogVisible, (newVal) => {
-  if (!newVal && activeTab.value === 'test') {
-    // 弹窗关闭时，如果当前是测试列表状态，则重置为默认状态
-    activeTab.value = ''
-  }
-})
 
 // 监听反馈弹窗关闭，重置按钮状态
 watch(feedbackDialogVisible, (newVal) => {
@@ -531,154 +492,287 @@ function formatTimeForDisplay(timeString) {
 }
 
 
+const ingestTaskList = ref([])
+const wsStatusText = computed(() => quizWsStore.statusText)
+let ingestPollTimers = new Map()
+
+// 录音相关状态
 const isRecording = ref(false)
-let recognition = null
-//录音按钮
-function toggleRecording() {
-  if (!isRecording.value) {
-    startRecording()
-  } else {
-    stopRecording()
+const recordedBlob = ref(null)
+const recordedMimeType = ref('audio/webm')
+let mediaRecorder = null
+let mediaStream = null
+let recordedChunks = []
+
+watch(() => activity.value?.id, async (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    quizWsStore.subscribeTeacherTopic(newId)
+    await loadIngestTaskList()
+  }
+})
+
+async function uploadFileToIngest(file) {
+  if (isActivityEnded.value) {
+    ElMessage.warning('活动已结束，不能上传文件')
+    return false
+  }
+
+  try {
+    const uploadRes = await uploadIngestFile(file, activity.value.id)
+    const accepted = uploadRes?.data?.data || uploadRes?.data
+    const taskId = accepted?.taskId
+    if (!taskId) {
+      ElMessage.error('上传成功但未返回任务ID')
+      return false
+    }
+
+    ingestTaskList.value.unshift({
+      taskId,
+      fileName: file.name,
+      status: accepted?.status || 'PENDING',
+      popQuizId: null,
+      sent: 0,
+      createdAt: Date.now(),
+      textLength: 0,
+      errorMessage: ''
+    })
+
+    ElMessage.success('文件已上传，后台正在解析')
+    startStatusPolling(taskId)
+    return true
+  } catch (e) {
+    ElMessage.error('文件上传失败')
+    return false
   }
 }
-//录音内容
-function startRecording() {
-  // 兼容性判断
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-  if (!SpeechRecognition) {
-    ElMessage.error("当前浏览器不支持语音识别")
+
+// 处理文件上传（后端解析）
+async function handleFileUpload(file) {
+  await uploadFileToIngest(file)
+  // 阻止 el-upload 默认上传行为
+  return false
+}
+
+async function startRecording() {
+  if (isActivityEnded.value) {
+    ElMessage.warning('活动已结束，不能录音')
     return
   }
-  recognition = new SpeechRecognition()
-  recognition.lang = "zh-CN" // 可根据需要设置语言
-  recognition.continuous = false
-  recognition.interimResults = false
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const supportedType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm'
 
-  recognition.onstart = () => {
+    mediaRecorder = new MediaRecorder(mediaStream, { mimeType: supportedType })
+    recordedChunks = []
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        recordedChunks.push(event.data)
+      }
+    }
+
+    mediaRecorder.onstop = () => {
+      if (recordedChunks.length > 0) {
+        const mime = mediaRecorder?.mimeType || 'audio/webm'
+        recordedMimeType.value = mime
+        recordedBlob.value = new Blob(recordedChunks, { type: mime })
+      }
+
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop())
+        mediaStream = null
+      }
+      mediaRecorder = null
+      recordedChunks = []
+      isRecording.value = false
+      ElMessage.success('录音完成，可点击“上传录音”')
+    }
+
+    mediaRecorder.start()
     isRecording.value = true
-    ElMessage.info("开始录音，请说话...")
+    recordedBlob.value = null
+    ElMessage.success('开始录音')
+  } catch (error) {
+    console.error('开始录音失败:', error)
+    ElMessage.error('无法访问麦克风，请检查浏览器权限')
   }
-  recognition.onerror = (event) => {
-    isRecording.value = false
-    ElMessage.error("录音出错: " + event.error)
-  }
-  recognition.onend = () => {
-    isRecording.value = false
-    ElMessage.info("录音结束")
-  }
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript
-    popquizText.value = transcript // 覆盖文本框
-    ElMessage.success("识别成功，已填入文本框")
-  }
-
-  recognition.start()
 }
 
 function stopRecording() {
-  if (recognition) {
-    recognition.stop()
-  }
+  if (!mediaRecorder || !isRecording.value) return
+  mediaRecorder.stop()
 }
-// 处理文件上传
-async function handleFileUpload(file) {
-  console.log('upload',file)
-  const ext = file.name.split('.').pop().toLowerCase()
-  if (ext === 'pdf') {
-    await readPdf(file)
-  } else if (ext === 'pptx') {
-    await readPptx(file)
-  } else {
-    ElMessage.error("只支持PDF或PPTX文件")
-    return false
-  }
-  return false // 阻止自动上传
-}
-// 读取PDF文本
-async function readPdf(file) {
-  try {
-    const arrayBuffer = await file.arrayBuffer()
-   // console.log('arrayBuffer', arrayBuffer)
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-  //  console.log('pdf loaded', pdf)
-    let text = ""
-    for (let i = 1; i <= pdf.numPages; i++) {
-   //   console.log('reading page', i)
-      const page = await pdf.getPage(i)
-      const content = await page.getTextContent()
-   //   console.log('page content', content)
-      text += content.items.map(item => item.str).join(" ") + "\n"
-    }
-  //  console.log('text', text)
-    popquizText.value = text
-  } catch (e) {
-    console.error('readPdf error', e)
-  }
-}
-// 读取PPTX文本
-async function readPptx(file) {
-  try {
-    const arrayBuffer = await file.arrayBuffer()
-    const zip = await JSZip.loadAsync(arrayBuffer)
-    let text = ""
 
-    // 找到所有幻灯片文件
-    const slideFiles = Object.keys(zip.files)
-      .filter(name => /^ppt\/slides\/slide[0-9]+\.xml$/.test(name))
-      .sort((a, b) => {
-        const aMatch = a.match(/slide([0-9]+)\.xml/)
-        const bMatch = b.match(/slide([0-9]+)\.xml/)
-        const aNum = aMatch ? parseInt(aMatch[1]) : 0
-        const bNum = bMatch ? parseInt(bMatch[1]) : 0
-        return aNum - bNum
-      })
+async function uploadRecording() {
+  if (isActivityEnded.value) {
+    ElMessage.warning('活动已结束，不能上传录音')
+    return
+  }
+  if (!recordedBlob.value) {
+    ElMessage.warning('暂无可上传的录音')
+    return
+  }
 
-    for (const slideName of slideFiles) {
-      const xmlString = await zip.files[slideName].async("string")
-      const parser = new DOMParser()
-      const xmlDoc = parser.parseFromString(xmlString, "application/xml")
-      const tNodes = xmlDoc.getElementsByTagName("a:t")
-      for (let i = 0; i < tNodes.length; i++) {
-        text += tNodes[i].textContent + " "
+  const ext = recordedMimeType.value.includes('ogg') ? 'ogg' : 'webm'
+  const fileName = `recording-${Date.now()}.${ext}`
+  const audioFile = new File([recordedBlob.value], fileName, { type: recordedMimeType.value || 'audio/webm' })
+
+  const ok = await uploadFileToIngest(audioFile)
+  if (ok) {
+    recordedBlob.value = null
+  }
+}
+
+function startStatusPolling(taskId) {
+  if (ingestPollTimers.has(taskId)) return
+
+  const timer = setInterval(async () => {
+    try {
+      const res = await getIngestStatus(taskId)
+      const statusData = res?.data?.data || res?.data
+      if (!statusData) return
+
+      const idx = ingestTaskList.value.findIndex(t => t.taskId === taskId)
+      if (idx >= 0) {
+        ingestTaskList.value[idx].status = statusData.status
+        ingestTaskList.value[idx].textLength = statusData.textLength || 0
+        ingestTaskList.value[idx].errorMessage = statusData.errorMessage || ''
+        if (statusData.popQuizId) ingestTaskList.value[idx].popQuizId = statusData.popQuizId
       }
-      text += "\n"
+
+      if (statusData.status === 'SUCCESS' || statusData.status === 'FAILED') {
+        clearInterval(timer)
+        ingestPollTimers.delete(taskId)
+        if (statusData.status === 'SUCCESS') {
+          ElMessage.success(`文件解析完成：${taskId}`)
+        } else {
+          ElMessage.error(`文件解析失败：${statusData.errorMessage || '未知错误'}`)
+        }
+      }
+    } catch (e) {
+      // 轮询失败时不打断，下一轮继续
     }
-    popquizText.value = text
-    console.log('pptx text', text)
-  } catch (e) {
-    ElMessage.error("PPTX解析失败，请尝试其他文件或联系开发者")
-    console.error('pptx parse error', e)
+  }, 4000)
+
+  ingestPollTimers.set(taskId, timer)
+}
+
+function getIngestStatusTagType(status) {
+  if (status === 'SUCCESS') return 'success'
+  if (status === 'FAILED') return 'danger'
+  if (status === 'PROCESSING') return 'warning'
+  return 'info'
+}
+
+function applyIngestStatusMessage(msg) {
+  if (!msg || msg.type !== 'FILE_INGEST_STATUS') return
+  const taskId = msg.taskId
+  if (!taskId) return
+
+  const idx = ingestTaskList.value.findIndex(t => t.taskId === taskId)
+  if (idx < 0) return
+
+  ingestTaskList.value[idx].status = msg.status || ingestTaskList.value[idx].status
+  ingestTaskList.value[idx].errorMessage = msg.errorMessage || ''
+  if (typeof msg.textLength === 'number') {
+    ingestTaskList.value[idx].textLength = msg.textLength
+  }
+  if (msg.popQuizId) {
+    ingestTaskList.value[idx].popQuizId = msg.popQuizId
+  }
+
+  if (msg.status === 'SUCCESS' || msg.status === 'FAILED') {
+    const timer = ingestPollTimers.get(taskId)
+    if (timer) {
+      clearInterval(timer)
+      ingestPollTimers.delete(taskId)
+    }
   }
 }
-// Popquiz按钮提交
+async function loadIngestTaskList() {
+  if (!activity.value?.id) return
+  try {
+    const res = await getIngestTaskList(activity.value.id)
+    const list = res?.data?.data || res?.data || []
+    ingestTaskList.value = list.map(item => ({
+      taskId: item.taskId,
+      fileName: item.fileName,
+      status: item.status,
+      popQuizId: item.popQuizId || null,
+      sent: Number(item.sent || 0),
+      textLength: item.textLength || 0,
+      errorMessage: item.errorMessage || '',
+      createdAt: item.createdAt || Date.now()
+    }))
+  } catch (e) {
+    // ignore load history failure
+  }
+}
+
+function canSendPopQuiz(task) {
+  return !isActivityEnded.value && !!task && task.status === 'SUCCESS' && !!task.popQuizId && Number(task.sent || 0) === 0
+}
+
+function openPopQuizDialog(task) {
+  if (isActivityEnded.value) {
+    ElMessage.warning('活动已结束，不能发题')
+    return
+  }
+  if (!canSendPopQuiz(task)) {
+    ElMessage.warning('当前任务不可发题')
+    return
+  }
+  selectedTaskForQuiz.value = task
+  popquizDialogVisible.value = true
+}
+
+// Popquiz按钮提交（一个测验只允许发一次）
 async function submitPopquiz() {
-  if (!popquizText.value.trim()) {
-    ElMessage.error("内容不能为空")
+  if (isActivityEnded.value) {
+    ElMessage.warning('活动已结束，不能发题')
+    popquizDialogVisible.value = false
+    return
+  }
+
+  if (!selectedTaskForQuiz.value || !selectedTaskForQuiz.value.popQuizId) {
+    ElMessage.error('未选择可发题的测验')
     return
   }
   if (!popquizForm.value.count || !popquizForm.value.duration) {
-    ElMessage.error("请填写题目数量和时长")
+    ElMessage.error('请填写题目数量和时长')
     return
   }
+
+  const count = Number(popquizForm.value.count)
+  const duration = Number(popquizForm.value.duration)
+  if (!Number.isInteger(count) || count < 1 || count > 10) {
+    ElMessage.error('题目数量必须是1到10之间的整数')
+    return
+  }
+  if (!Number.isInteger(duration) || duration < 1 || duration > 30) {
+    ElMessage.error('答题时长必须是1到30分钟之间的整数')
+    return
+  }
+
   try {
-      await sendPopquiz({
-    activityId: activity.value.id,
-    questionCount: popquizForm.value.count,
-    lastTime: popquizForm.value.duration,
-    text: popquizText.value
+    await sendPopquiz({
+      popQuizId: selectedTaskForQuiz.value.popQuizId,
+      questionCount: popquizForm.value.count,
+      lastTime: popquizForm.value.duration
     })
-    ElMessage.success("已发送到后端！")
+
+    const idx = ingestTaskList.value.findIndex(t => t.taskId === selectedTaskForQuiz.value.taskId)
+    if (idx >= 0) {
+      ingestTaskList.value[idx].sent = 1
+    }
+
+    ElMessage.success('发题成功')
     popquizDialogVisible.value = false
+    selectedTaskForQuiz.value = null
   } catch (e) {
-    console.log(e)
-    if(e.message === "timeout of 5000ms exceeded"){
-    ElMessage.success("已发送到后端！")
-    popquizDialogVisible.value = false
-  }
-  else {
-      ElMessage.error("发送失败")
-  }
-  //  ElMessage.error("发送失败")
+    ElMessage.error(e?.response?.data?.errorMsg || '发题失败')
   }
 }
 
@@ -714,72 +808,52 @@ function formatDate(dateStr) {
   return d.toLocaleString('zh-CN', { hour12: false });
 }
 
-// 测试列表相关函数
-const showTestList = async () => {
-  activeTab.value = 'test' // 设置激活状态
-  testListDialogVisible.value = true
-  await refreshTestList()
+// 统计弹窗选项文案：避免后端已带 A./B. 时前端再次拼接导致重复
+function formatOptionForStat(opt, index) {
+  const text = String(opt ?? '').trim()
+  const prefixReg = /^[A-D][\.、\s]+/i
+  if (prefixReg.test(text)) {
+    return text
+  }
+  return `${String.fromCharCode(65 + index)}. ${text}`
 }
 
-// 刷新测试列表
-const refreshTestList = async () => {
-  if (!route.params.id) {
-    ElMessage.error('缺少活动ID')
+const handleViewResult = async (task) => {
+  if (!task || !task.popQuizId) {
+    ElMessage.warning('该任务暂无可查看的答题结果')
     return
   }
-  
-  loadingTestList.value = true
+
+  // 规则：Pop quiz可点击时，答题结果不可点击
+  if (canSendPopQuiz(task)) {
+    ElMessage.warning('请先发题后再查看答题结果')
+    return
+  }
+
   try {
-    const result = await ExamList(route.params.id);
-    
-    if (result.data.success) {
-      testListData.value = result.data.data || []
-      console.log('测试列表数据:', testListData.value)
-    } else {
-      ElMessage.error('获取测试列表失败: ' + (result.errorMsg || '未知错误'))
-    }
-  } catch (error) {
-    console.error('获取测试列表失败:', error)
-    ElMessage.error('获取测试列表失败: ' + error.message)
-  } finally {
-    loadingTestList.value = false
+    await showStat(task.popQuizId)
+  } catch (e) {
+    ElMessage.error('打开答题结果失败')
   }
 }
 
-// 格式化日期时间
-const formatDateTime = (dateTimeStr) => {
-  if (!dateTimeStr) return '未知'
-  try {
-    const date = new Date(dateTimeStr)
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch (error) {
-    return dateTimeStr
+onMounted(async () => {
+  await quizWsStore.ensureConnected(userInfoStore.id)
+  if (activity.value?.id) {
+    quizWsStore.subscribeTeacherTopic(activity.value.id)
+    await loadIngestTaskList()
   }
-}
+})
 
-// 获取测试状态文本
-const getTestStatusText = (status) => {
-  switch (status) {
-    case 0: return '进行中'
-    case 1: return '已结束'
-    default: return '未知'
-  }
-}
+watch(() => quizWsStore.lastTeacherMessageSeq, () => {
+  applyIngestStatusMessage(quizWsStore.lastTeacherMessage)
+})
 
-// 获取测试状态样式类
-const getTestStatusClass = (status) => {
-  switch (status) {
-    case 0: return 'status-active'
-    case 1: return 'status-completed'
-    default: return 'status-unknown'
-  }
-}
+onBeforeUnmount(() => {
+  ingestPollTimers.forEach((timer) => clearInterval(timer))
+  ingestPollTimers.clear()
+})
+
 import DiscussionArea from '../components/DiscussionArea.vue'
 import { useUserInfoStore } from '../stores/userInfo.js'
 const userInfoStore = useUserInfoStore()

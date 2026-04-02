@@ -464,13 +464,15 @@ import { ArrowLeft, Document, ChatDotRound, Comment, CircleCheck, CircleClose, L
 import { ElMessage } from 'element-plus'
 import { useUserInfoStore } from '../stores/userInfo.js'
 import { useActivityStore } from '../stores/activity.js'
+import { useQuizWsStore } from '../stores/quizWs.js'
 import { useRoute } from 'vue-router'
-import { submit, ExamList, ShowTestService } from '../api/activity.js'
+import { submit, ExamList, ShowTestService, getActiveQuiz, saveQuizDraft } from '../api/activity.js'
 import { submitFeedback, getFeedbackStats, getMyFeedbackHistory } from '../api/feedback.js'
 import DiscussionArea from '../components/DiscussionArea.vue'
 
 const userInfoStore = useUserInfoStore()
 const activityStore = useActivityStore()
+const quizWsStore = useQuizWsStore()
 const route = useRoute()
 
 const userId = userInfoStore.id  // 当前学生id
@@ -480,12 +482,8 @@ const activity = computed(() => activityStore.getActivityById(route.params.id) |
 
 const activeTab = ref('test')
 const isSubmit = ref(false)
-// WebSocket 相关状态
-const wsStatus = ref('disconnected') // disconnected, connecting, connected
-const wsStatusText = ref('未连接')
-let stompClient = null
-let subscription = null // 添加订阅对象
-let isConnecting = false // 添加连接状态标志
+const wsStatus = computed(() => quizWsStore.status)
+const wsStatusText = computed(() => quizWsStore.statusText)
 
 // 答题相关状态
 const quizDialogVisible = ref(false)
@@ -495,6 +493,8 @@ const quizData = ref([])
 const currentQuestionIndex = ref(0)
 const selectedAnswers = ref({})
 const timeLeft = ref(30)
+const totalTime = ref(30) // 当前测验总时长（秒）
+const currentQuizEndTime = ref(null) // 当前测验截止时间（毫秒时间戳）
 const currentPopQuizId = ref(null) // 当前PopQuiz ID
 const currentActivityId = ref(null) // 当前活动ID
 const testListData = ref([]) // 测试列表数据
@@ -504,6 +504,9 @@ const testResultData = ref(null) // 测试结果数据
 let timer = null
 const isSubmitting = ref(false);
 let quizSessionId = null;
+let draftSaveTimer = null;
+const draftQueueKey = 'pq_quiz_draft_queue'
+const isFlushingDraft = ref(false)
 
 // 反馈相关状态
 const feedbackDialogVisible = ref(false)
@@ -570,135 +573,6 @@ const getStatusType = (status) => {
   }
 }
 
-// WebSocket 连接
-const connectWebSocket = async () => {
-  // 防止重复连接
-  if (isConnecting || (stompClient && stompClient.connected)) {
-    console.log('WebSocket 已连接或正在连接中，跳过重复连接')
-    return
-  }
-
-  isConnecting = true
-  wsStatus.value = 'connecting'
-  wsStatusText.value = '连接中...'
-
-  try {
-    // 动态加载 SockJS 和 STOMP
-    await loadWebSocketLibraries()
-    
-    // 创建 SockJS 连接
-    const socket = new SockJS('http://localhost:8080/ws/quiz')
-    stompClient = Stomp.over(socket)
-    
-    // 配置 STOMP 客户端
-    stompClient.reconnect_delay = 5000
-    stompClient.debug = null // 关闭调试日志
-    
-    // 连接 WebSocket
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('连接超时'))
-      }, 10000) // 10秒超时
-      
-      stompClient.connect({}, 
-        (frame) => {
-          clearTimeout(timeout)
-          wsStatus.value = 'connected'
-          wsStatusText.value = '已连接'
-          isConnecting = false
-          // 去掉连接成功弹窗，避免多次弹出
-          // ElMessage.success('WebSocket 连接成功')
-          subscribeToPersonalChannel()
-          resolve()
-        }, 
-        (error) => {
-          clearTimeout(timeout)
-          wsStatus.value = 'disconnected'
-          wsStatusText.value = '连接失败'
-          isConnecting = false
-          ElMessage.error('WebSocket 连接失败: ' + error)
-          reject(error)
-        }
-      )
-    })
-    
-  } catch (error) {
-    wsStatus.value = 'disconnected'
-    wsStatusText.value = '连接失败'
-    isConnecting = false
-    console.error('WebSocket 连接错误:', error)
-    ElMessage.error('WebSocket 初始化失败: ' + error.message)
-    // 5秒后重试连接
-    setTimeout(() => {
-      if (wsStatus.value === 'disconnected') {
-        connectWebSocket()
-      }
-    }, 5000)
-  }
-}
-
-// 动态加载 WebSocket 库
-const loadWebSocketLibraries = () => {
-  return new Promise((resolve, reject) => {
-    // 检查是否已加载
-    if (window.SockJS && window.Stomp) {
-      resolve()
-      return
-    }
-
-    let loadedCount = 0
-    const totalLibraries = 2
-
-    const checkAllLoaded = () => {
-      loadedCount++
-      if (loadedCount === totalLibraries) {
-        resolve()
-      }
-    }
-
-    const handleError = (error) => {
-      reject(new Error('加载 WebSocket 库失败: ' + error))
-    }
-
-    // 加载 SockJS
-    const sockjsScript = document.createElement('script')
-    sockjsScript.src = 'https://cdn.bootcdn.net/ajax/libs/sockjs-client/1.5.1/sockjs.min.js'
-    sockjsScript.onload = checkAllLoaded
-    sockjsScript.onerror = () => handleError('SockJS 加载失败')
-    document.head.appendChild(sockjsScript)
-
-    // 加载 STOMP
-    const stompScript = document.createElement('script')
-    stompScript.src = 'https://cdn.bootcdn.net/ajax/libs/stomp.js/2.3.3/stomp.min.js'
-    stompScript.onload = checkAllLoaded
-    stompScript.onerror = () => handleError('STOMP 加载失败')
-    document.head.appendChild(stompScript)
-  })
-}
-
-// 订阅个人频道
-const subscribeToPersonalChannel = () => {
-  if (stompClient && stompClient.connected) {
-    // 如果已有订阅，先取消订阅
-    if (subscription) {
-      subscription.unsubscribe()
-      subscription = null
-      console.log('取消之前的订阅')
-    }
-    subscription = stompClient.subscribe('/topic/quiz/' + userId, (message) => {
-      try {
-        const data = JSON.parse(message.body)
-        console.log('收到WebSocket消息:', data)
-        // 只保留一条消息提示
-        handleQuizData(data)
-      } catch (error) {
-        console.error('处理消息失败:', error)
-        ElMessage.error('处理题目数据失败')
-      }
-    })
-    console.log('已订阅个人频道: /topic/quiz/' + userId)
-  }
-}
 
 // 处理接收到的题目数据
 const handleQuizData = (data) => {
@@ -708,22 +582,50 @@ const handleQuizData = (data) => {
   }
   try {
     // 检查数据格式，支持新的包含时间限制的格式和旧的直接题目数组格式
-    if (data && typeof data === 'object' && data.questions && data.lastTime) {
-      // 新格式：包含时间限制的数据
+    if (data && typeof data === 'object' && data.questions) {
+      // 新格式：包含题目与时间窗口（优先使用 endTime 计算剩余时间）
       quizData.value = Array.isArray(data.questions) ? data.questions : [data.questions]
-      timeLeft.value = data.lastTime // 使用后端推送的时间限制（秒）
       currentPopQuizId.value = data.popQuizId // 保存PopQuiz ID
       currentActivityId.value = data.activityId // 保存活动ID
+
+      const endTimeMs = data.endTime ? new Date(data.endTime).getTime() : null
+      const startTimeMs = data.startTime ? new Date(data.startTime).getTime() : null
+      if (endTimeMs && !Number.isNaN(endTimeMs)) {
+        currentQuizEndTime.value = endTimeMs
+        const remain = Math.max(0, Math.floor((endTimeMs - Date.now()) / 1000))
+        timeLeft.value = remain
+
+        if (startTimeMs && !Number.isNaN(startTimeMs)) {
+          totalTime.value = Math.max(0, Math.floor((endTimeMs - startTimeMs) / 1000))
+        } else if (data.lastTime) {
+          totalTime.value = Number(data.lastTime)
+        } else {
+          totalTime.value = remain
+        }
+      } else {
+        // 兼容旧字段 lastTime（秒）
+        currentQuizEndTime.value = null
+        timeLeft.value = Number(data.lastTime) || 30
+        totalTime.value = Number(data.lastTime) || 30
+      }
+      if (timeLeft.value <= 0) {
+        ElMessage.warning('本次测试已截止')
+        return
+      }
     } else if (Array.isArray(data)) {
       // 旧格式：直接是题目数组
       quizData.value = data
+      currentQuizEndTime.value = null
       timeLeft.value = 30 // 默认30秒
+      totalTime.value = 30
       currentPopQuizId.value = null // 旧格式没有PopQuiz ID
       currentActivityId.value = null // 旧格式没有活动ID
     } else if (data && typeof data === 'object') {
       // 可能是单个题目对象
       quizData.value = [data]
+      currentQuizEndTime.value = null
       timeLeft.value = 30 // 默认30秒
+      totalTime.value = 30
       currentPopQuizId.value = null // 单个题目没有PopQuiz ID
       currentActivityId.value = null // 单个题目没有活动ID
     } else {
@@ -766,7 +668,7 @@ const handleQuizData = (data) => {
     })
     
     ElMessage.closeAll();
-    ElMessage.success(`收到 ${quizData.value.length} 道题目，时间限制 ${timeLeft.value} 秒`)
+    ElMessage.success(`收到 ${quizData.value.length} 道题目，总时长 ${totalTime.value} 秒`)
     
   } catch (error) {
     console.error('处理题目数据失败:', error)
@@ -779,11 +681,17 @@ const startTimer = () => {
   if (timer) {
     clearInterval(timer)
   }
-  
+
   timer = setInterval(() => {
-    if (timeLeft.value > 0) {
+    // 优先使用绝对截止时间计算剩余秒数，避免晚进入页面时倒计时重置
+    if (currentQuizEndTime.value) {
+      timeLeft.value = Math.max(0, Math.floor((currentQuizEndTime.value - Date.now()) / 1000))
+    } else if (timeLeft.value > 0) {
+      // 兼容旧逻辑
       timeLeft.value--
-    } else {
+    }
+
+    if (timeLeft.value <= 0) {
       // 时间到，自动提交
       clearInterval(timer)
       timer = null
@@ -886,6 +794,8 @@ const closeResult = () => {
   currentQuestionIndex.value = 0
   selectedAnswers.value = {}
   timeLeft.value = 30
+  totalTime.value = 30
+  currentQuizEndTime.value = null
   currentPopQuizId.value = null
   currentActivityId.value = null
   quizSessionId = null;
@@ -985,66 +895,167 @@ const getOptionLetter = (index) => {
   return String.fromCharCode(65 + index)
 }
 
-// 断开 WebSocket 连接
-const disconnectWebSocket = () => {
-  // 取消订阅
-  if (subscription) {
-    try {
-      subscription.unsubscribe()
-      subscription = null
-      console.log('WebSocket 订阅已取消')
-    } catch (error) {
-      console.error('取消订阅失败:', error)
-    }
+const loadDraftQueue = () => {
+  try {
+    const raw = localStorage.getItem(draftQueueKey)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
   }
-  if (stompClient) {
-    try {
-      stompClient.disconnect(() => {
-        console.log('WebSocket 已断开连接')
+}
+
+const saveDraftQueue = (queue) => {
+  localStorage.setItem(draftQueueKey, JSON.stringify(queue))
+}
+
+const enqueueDraft = () => {
+  if (!currentPopQuizId.value || !userId) return
+  const payload = {
+    popQuizId: Number(currentPopQuizId.value),
+    userId: Number(userId),
+    activityId: Number(route.params.id),
+    answers: { ...selectedAnswers.value },
+    updatedAt: Date.now()
+  }
+
+  const queue = loadDraftQueue()
+  const idx = queue.findIndex(
+    item => Number(item.popQuizId) === Number(payload.popQuizId) && Number(item.userId) === Number(payload.userId)
+  )
+  if (idx >= 0) {
+    queue[idx] = payload
+  } else {
+    queue.push(payload)
+  }
+  saveDraftQueue(queue)
+}
+
+const removeDraftFromQueue = (popQuizId, targetUserId) => {
+  const queue = loadDraftQueue()
+  const next = queue.filter(
+    item => !(Number(item.popQuizId) === Number(popQuizId) && Number(item.userId) === Number(targetUserId))
+  )
+  saveDraftQueue(next)
+}
+
+const flushDraftQueue = async () => {
+  if (isFlushingDraft.value || !navigator.onLine) return
+  isFlushingDraft.value = true
+  try {
+    const queue = loadDraftQueue()
+    if (!queue.length) return
+
+    const remain = []
+    for (const item of queue) {
+      try {
+        await saveQuizDraft(item.popQuizId, item.userId, item.answers || {})
+      } catch (e) {
+        remain.push(item)
+      }
+    }
+    saveDraftQueue(remain)
+  } finally {
+    isFlushingDraft.value = false
+  }
+}
+
+// 恢复当前活动中的进行中测验（刷新/重连可恢复）
+const restoreActiveQuiz = async () => {
+  if (!route.params.id || !userId) return
+  try {
+    const res = await getActiveQuiz(route.params.id, userId)
+    const data = res?.data?.data
+    if (!res?.data?.success || !data?.active) return
+
+    handleQuizData(data)
+
+    // 回填草稿答案（后端返回 key 为题目索引）
+    if (data.answers && typeof data.answers === 'object') {
+      const restored = {}
+      Object.keys(data.answers).forEach((key) => {
+        const idx = Number(key)
+        const val = Number(data.answers[key])
+        if (!Number.isNaN(idx) && !Number.isNaN(val)) {
+          restored[idx] = val
+        }
       })
-    } catch (error) {
-      console.error('断开 WebSocket 连接失败:', error)
+      selectedAnswers.value = restored
     }
-    stompClient = null
+
+    // 优先补发本地离线队列里同一场测验的草稿
+    await flushDraftQueue()
+  } catch (error) {
+    console.error('恢复进行中测验失败:', error)
   }
+}
+
+// 节流保存草稿
+const scheduleDraftSave = () => {
+  if (!currentPopQuizId.value || !userId || !quizDialogVisible.value) return
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer)
+  }
+  draftSaveTimer = setTimeout(async () => {
+    try {
+      await saveQuizDraft(currentPopQuizId.value, userId, selectedAnswers.value)
+      removeDraftFromQueue(currentPopQuizId.value, userId)
+    } catch (error) {
+      // 网络抖动/断网时进入本地队列，联网后自动补发
+      enqueueDraft()
+      console.error('保存草稿失败，已加入本地补发队列:', error)
+    }
+  }, 800)
+}
+
+// 监听答案变化，自动保存草稿
+watch(
+  () => selectedAnswers.value,
+  () => {
+    scheduleDraftSave()
+  },
+  { deep: true }
+)
+
+// 组件挂载时：先恢复进行中测验，再确保全局 WS 已连接并监听全局消息
+onMounted(async () => {
+  await restoreActiveQuiz()
+
+  // 监听网络恢复，自动补发离线期间积压的草稿
+  window.addEventListener('online', flushDraftQueue)
+  await flushDraftQueue()
+
+  if (userId) {
+    quizWsStore.ensureConnected(userId)
+  }
+
+  watch(
+    () => quizWsStore.lastMessageSeq,
+    () => {
+      const data = quizWsStore.lastMessage
+      if (!data) return
+
+      // 只处理当前活动的题目，避免串活动弹题
+      if (String(data.activityId) !== String(route.params.id)) return
+
+      handleQuizData(data)
+    },
+    { immediate: true } // 页面打开时立即检查一次，接住“先收到题再进入活动页”的场景
+  )
+})
+
+// 组件卸载时仅清理页面级计时器，不断开全局 WS
+onUnmounted(() => {
   if (timer) {
     clearInterval(timer)
     timer = null
   }
-  isConnecting = false
-  wsStatus.value = 'disconnected'
-  wsStatusText.value = '未连接'
-}
-
-// 组件挂载时连接 WebSocket
-onMounted(() => {
-  console.log('组件挂载，准备连接WebSocket')
-  // 延迟连接，确保组件完全加载
-  setTimeout(() => {
-    if (wsStatus.value === 'disconnected' && !isConnecting) {
-      connectWebSocket()
-    }
-  }, 1000)
-  // checkMyFeedback() // 移除这里的自动调用
-})
-
-// 组件卸载时断开连接
-onUnmounted(() => {
-  disconnectWebSocket()
-})
-
-// 页面可见性变化时处理连接
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    // 页面隐藏时，可以选择断开连接或保持连接
-    console.log('页面隐藏')
-  } else {
-    // 页面显示时，检查连接状态
-    if (wsStatus.value === 'disconnected' && !isConnecting) {
-      console.log('页面重新显示，尝试重新连接WebSocket')
-      connectWebSocket()
-    }
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer)
+    draftSaveTimer = null
   }
+  window.removeEventListener('online', flushDraftQueue)
 })
 
 // 格式化时间(活动内容时间)

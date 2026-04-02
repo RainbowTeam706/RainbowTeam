@@ -7,7 +7,7 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://localhost:3306/pq?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: 041205gy
+    password: 12345678
   redis:
     host: localhost
     port: 6379
@@ -27,9 +27,19 @@ mybatis-plus:
 logging:
   level:
     com.pq: debug
+
 # 豆包AI配置
 doubao:
   api:
-    key: 45916371-4be9-4c96-85ef-36e37b23c04a  # 直接设置，不使用环境变量
+    key: 1a251fe4-5fbf-4171-bb2a-dcd01f2e7e81  # 直接设置，不使用环境变量
     url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
-  model: doubao-seed-1-6-250615
+  model: doubao-seed-2-0-pro-260215
+
+ai:
+  engine:
+    preprocess-truncate-threshold: 1000
+    long-term-max-items: 5
+    rag-top-k: 3
+    vector-dims: 128
+    memory-min-text-length: 30
+    memory-min-sentence-count: 3

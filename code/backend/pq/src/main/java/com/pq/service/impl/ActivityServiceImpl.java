@@ -32,7 +32,7 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
 
     @Override
     public void updateStatus() {
-        log.info("开始执行活动状态更新定时任务");
+        //log.info("开始执行活动状态更新定时任务");
         List<Activity> activities = query().in("status",0,1).list();  //查询所有状态为0（未开始） 和1（进行中） 的活动
         Date now = new Date();
         for (Activity activity : activities) {
@@ -40,16 +40,16 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
                 ActivityStatus newStatus = calculateNewStatus(activity, now);
                 if (newStatus != null && newStatus.getCode() != activity.getStatus()) {
                     update().eq("id", activity.getId()).set("status", newStatus.getCode()).update();
-                    log.info("活动ID: {}, 状态从 {} 更新为 {}",
-                            activity.getId(),
-                            ActivityStatus.fromCode(activity.getStatus()).getDescription(),
-                            newStatus.getDescription());
+//                    log.info("活动ID: {}, 状态从 {} 更新为 {}",
+//                            activity.getId(),
+//                            ActivityStatus.fromCode(activity.getStatus()).getDescription(),
+//                            newStatus.getDescription());
                 }
             } catch (Exception e) {
                 log.error("更新活动状态失败，活动ID: {}, 错误: {}", activity.getId(), e.getMessage());
             }
         }
-        log.info("活动状态更新定时任务执行完成");
+        //log.info("活动状态更新定时任务执行完成");
     }
 
 
